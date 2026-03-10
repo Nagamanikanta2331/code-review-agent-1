@@ -60,6 +60,7 @@ app.add_middleware(
     allow_origins=[
         "https://dancing-mermaid-f9e4c6.netlify.app",
         "https://69aff3debac052b83330b6ec--dancing-mermaid-f9e4c6.netlify.app",
+        "https://code-review-aiagent.netlify.app/",
         "http://localhost:3000",
     ],
     allow_credentials=True,
