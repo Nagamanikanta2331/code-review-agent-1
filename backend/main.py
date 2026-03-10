@@ -34,7 +34,16 @@ MAX_TOKENS: int = 8192
 TOP_P: float = 0.9
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-FRONTEND_DIR = BASE_DIR / "frontend"
+
+
+def _resolve_frontend_dir() -> Path:
+    frontend_dir = BASE_DIR / "frontend"
+    if frontend_dir.is_dir():
+        return frontend_dir
+    return BASE_DIR
+
+
+FRONTEND_DIR = _resolve_frontend_dir()
 
 if not GEMINI_API_KEY:
     print("⚠️  GEMINI_API_KEY is missing — set it in backend/.env")
@@ -526,7 +535,7 @@ def extract_json(raw: str) -> dict:
 
 
 def _serve_html(filename: str) -> FileResponse:
-    """Return an HTML file from the frontend directory or raise 404."""
+    """Return an HTML file from the resolved frontend directory or raise 404."""
     path = FRONTEND_DIR / filename
     if not path.is_file():
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"{filename} not found at {path}")
