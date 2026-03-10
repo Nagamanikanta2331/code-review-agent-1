@@ -1,0 +1,3223 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Code Review &amp; Rewrite Agent</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <!-- Highlight.js (for markdown code blocks in results) -->
+    <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
+    <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" disabled />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Additional highlight.js language packs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/swift.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/csharp.min.js"></script>
+
+    <!-- Marked.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+
+    <!-- ═══════════════════ DESIGN SYSTEM ═══════════════════ -->
+    <style>
+        /* ────────────────────────────────────────
+           CSS Custom Properties — Dark Theme
+        ──────────────────────────────────────── */
+        :root, [data-theme="dark"] {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #1c2128;
+            --bg-elevated: #21262d;
+            --border: #30363d;
+            --border-subtle: rgba(48, 54, 61, 0.5);
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #484f58;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-subtle: rgba(99, 102, 241, 0.12);
+            --accent-glow: rgba(99, 102, 241, 0.2);
+            --success: #3fb950;
+            --success-subtle: rgba(63, 185, 80, 0.12);
+            --warning: #d29922;
+            --warning-subtle: rgba(210, 153, 34, 0.12);
+            --error: #f85149;
+            --error-subtle: rgba(248, 81, 73, 0.12);
+            --info: #58a6ff;
+            --info-subtle: rgba(88, 166, 255, 0.12);
+            --glass-bg: rgba(22, 27, 34, 0.75);
+            --glass-border: rgba(48, 54, 61, 0.45);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.35);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.08);
+            --orb-1: rgba(99, 102, 241, 0.06);
+            --orb-2: rgba(139, 92, 246, 0.05);
+            --overlay: rgba(0, 0, 0, 0.6);
+            color-scheme: dark;
+        }
+
+        /* ────────────────────────────────────────
+           CSS Custom Properties — Light Theme
+        ──────────────────────────────────────── */
+        [data-theme="light"] {
+            --bg-primary: #f6f8fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f0f3f6;
+            --bg-elevated: #e8ecf0;
+            --border: #d0d7de;
+            --border-subtle: rgba(208, 215, 222, 0.5);
+            --text-primary: #1f2328;
+            --text-secondary: #656d76;
+            --text-muted: #8b949e;
+            --accent: #4f46e5;
+            --accent-hover: #6366f1;
+            --accent-subtle: rgba(79, 70, 229, 0.08);
+            --accent-glow: rgba(79, 70, 229, 0.12);
+            --success: #1a7f37;
+            --success-subtle: rgba(26, 127, 55, 0.08);
+            --warning: #9a6700;
+            --warning-subtle: rgba(154, 103, 0, 0.08);
+            --error: #cf222e;
+            --error-subtle: rgba(207, 34, 46, 0.08);
+            --info: #0969da;
+            --info-subtle: rgba(9, 105, 218, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.72);
+            --glass-border: rgba(208, 215, 222, 0.45);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+            --shadow-glow: 0 0 40px rgba(79, 70, 229, 0.06);
+            --orb-1: rgba(79, 70, 229, 0.04);
+            --orb-2: rgba(139, 92, 246, 0.03);
+            --overlay: rgba(255, 255, 255, 0.6);
+            color-scheme: light;
+        }
+
+        /* ────────────────────────────────────────
+           Global Reset & Base
+        ──────────────────────────────────────── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background 0.35s ease, color 0.35s ease;
+        }
+
+        /* Smooth theme transitions on interactive elements */
+        body *, body *::before, body *::after {
+            transition-property: background, color, border-color, box-shadow, opacity;
+            transition-duration: 0s;
+        }
+        body.theme-transitioning *,
+        body.theme-transitioning *::before,
+        body.theme-transitioning *::after {
+            transition-duration: 0.35s !important;
+            transition-timing-function: ease !important;
+        }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* ── Ambient Background Orbs ── */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            pointer-events: none;
+            z-index: 0;
+            transition: background 0.6s ease;
+        }
+        .bg-orb-1 {
+            width: 600px; height: 600px;
+            top: -200px; left: -150px;
+            background: var(--orb-1);
+            animation: float-orb-1 12s ease-in-out infinite;
+        }
+        .bg-orb-2 {
+            width: 500px; height: 500px;
+            bottom: -200px; right: -100px;
+            background: var(--orb-2);
+            animation: float-orb-2 15s ease-in-out 3s infinite;
+        }
+        @keyframes float-orb-1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(30px, -20px) scale(1.05); }
+        }
+        @keyframes float-orb-2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(-20px, 15px) scale(1.06); }
+        }
+
+        /* ────────────────────────────────────────
+           Navbar
+        ──────────────────────────────────────── */
+        .navbar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 20;
+            flex-shrink: 0;
+        }
+        .navbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
+        }
+        .logo-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px var(--accent-glow);
+            flex-shrink: 0;
+        }
+        .logo-icon img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        /* ── Theme Toggle ── */
+        .theme-toggle {
+            width: 48px; height: 26px;
+            border-radius: 13px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            position: relative;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+        .theme-toggle:hover { border-color: var(--accent); }
+        .toggle-thumb {
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            background: var(--accent);
+            position: absolute;
+            top: 2px; left: 2px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        [data-theme="light"] .toggle-thumb { transform: translateX(22px); }
+        .toggle-icon {
+            position: absolute;
+            font-size: 11px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: opacity 0.3s ease;
+            line-height: 1;
+        }
+        .icon-moon { right: 6px; opacity: 0.4; }
+        .icon-sun  { left: 6px; opacity: 0.4; }
+        [data-theme="dark"]  .icon-moon { opacity: 1; }
+        [data-theme="light"] .icon-sun  { opacity: 1; }
+
+        /* ────────────────────────────────────────
+           Tab Bar
+        ──────────────────────────────────────── */
+        .tab-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            display: flex;
+            gap: 0;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 15;
+        }
+        .tab-btn {
+            padding: 12px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-muted);
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.25s ease, border-color 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .tab-btn:hover { color: var(--text-secondary); }
+        .tab-btn.tab-active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* ────────────────────────────────────────
+           Editor Wrapper (animated glow border)
+        ──────────────────────────────────────── */
+        .editor-wrapper {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .editor-wrapper:focus-within,
+        .editor-wrapper.active {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: 0 0 0 2px var(--accent-glow), var(--shadow-glow);
+        }
+
+        /* ────────────────────────────────────────
+           Buttons
+        ──────────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            color: white;
+            box-shadow: 0 2px 12px var(--accent-glow);
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+        .btn-primary:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+        .btn-success {
+            background: linear-gradient(135deg, #059669, #34d399);
+            color: white;
+            box-shadow: 0 2px 12px rgba(5, 150, 105, 0.2);
+        }
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(5, 150, 105, 0.3);
+        }
+        .btn-success:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+
+        /* ────────────────────────────────────────
+           Focus Area Chips
+        ──────────────────────────────────────── */
+        .focus-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 14px;
+            border-radius: 20px;
+            font-size: 12.5px;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .focus-chip:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+        .focus-chip.selected {
+            background: var(--accent-subtle);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent-glow);
+        }
+        .chip-icon {
+            font-size: 11px;
+            width: 20px; height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-subtle);
+            color: var(--accent);
+            transition: all 0.2s ease;
+        }
+        .focus-chip.selected .chip-icon {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* ────────────────────────────────────────
+           Severity Badges
+        ──────────────────────────────────────── */
+        .severity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+        .severity-critical { background: var(--error-subtle); color: var(--error); border: 1px solid rgba(248,81,73,0.2); }
+        .severity-high { background: rgba(255,166,87,0.1); color: #ffa657; border: 1px solid rgba(255,166,87,0.2); }
+        .severity-medium { background: var(--warning-subtle); color: var(--warning); border: 1px solid rgba(210,153,34,0.2); }
+        .severity-low { background: var(--info-subtle); color: var(--info); border: 1px solid rgba(88,166,255,0.2); }
+
+        /* ────────────────────────────────────────
+           Select Dropdown
+        ──────────────────────────────────────── */
+        .select-modern {
+            appearance: none;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            padding: 9px 36px 9px 14px;
+            border-radius: 10px;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+        .select-modern:hover { border-color: var(--accent); }
+        .select-modern:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+        .select-modern option { background: var(--bg-secondary); color: var(--text-primary); }
+
+        /* ────────────────────────────────────────
+           Result Card
+        ──────────────────────────────────────── */
+        .result-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow-sm);
+        }
+        .card-3d { transition: transform 0.35s ease, box-shadow 0.35s ease; }
+        .card-3d:hover {
+            transform: perspective(800px) rotateX(-0.3deg) rotateY(0.3deg) translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* ────────────────────────────────────────
+           Markdown Output
+        ──────────────────────────────────────── */
+        .md-output h1, .md-output h2, .md-output h3 { margin: 16px 0 8px; font-weight: 700; color: var(--text-primary); }
+        .md-output h1 { font-size: 1.25rem; }
+        .md-output h2 { font-size: 1.1rem; }
+        .md-output h3 { font-size: 1rem; }
+        .md-output p { margin-bottom: 10px; line-height: 1.65; }
+        .md-output ul, .md-output ol { margin-left: 18px; margin-bottom: 10px; }
+        .md-output li { margin-bottom: 5px; line-height: 1.55; }
+        .md-output code {
+            background: var(--bg-tertiary);
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-size: 0.82rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .md-output pre {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 12px 0;
+            overflow-x: auto;
+        }
+        .md-output pre code { background: transparent; padding: 0; }
+        .md-output blockquote { border-left: 3px solid var(--accent); padding-left: 14px; color: var(--text-secondary); margin: 10px 0; }
+        .md-output a { color: var(--accent); text-decoration: underline; }
+        .md-output strong { color: var(--text-primary); }
+
+        /* ────────────────────────────────────────
+           Chat Tab
+        ──────────────────────────────────────── */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 820px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+        }
+        .chat-avatar {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+        .chat-avatar.ai {
+            background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+            color: white;
+        }
+        .chat-avatar.user {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-height: 0;
+        }
+        .chat-welcome {
+            text-align: center;
+            padding: 48px 20px;
+            margin: auto 0;
+        }
+        .chat-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .chat-suggestion-chip {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+        .chat-suggestion-chip:hover {
+            background: var(--accent-subtle);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .chat-bubble {
+            display: flex;
+            gap: 10px;
+            max-width: 85%;
+            animation: chatFadeIn 0.25s ease;
+        }
+        @keyframes chatFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-bubble.user { align-self: flex-end; flex-direction: row-reverse; }
+        .chat-bubble.ai { align-self: flex-start; }
+        .chat-bubble-content {
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .chat-bubble.user .chat-bubble-content {
+            background: var(--accent);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-bubble.ai .chat-bubble-content {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+        .chat-bubble.ai .chat-bubble-content .md-output { font-size: 13px; }
+        .chat-bubble.ai .chat-bubble-content pre {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin: 8px 0;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .chat-bubble.ai .chat-bubble-content code {
+            font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+            font-size: 12px;
+        }
+        .chat-bubble.ai .chat-bubble-content p { margin: 0 0 8px; }
+        .chat-bubble.ai .chat-bubble-content p:last-child { margin-bottom: 0; }
+        .chat-typing {
+            display: flex;
+            gap: 4px;
+            padding: 4px 0;
+        }
+        .chat-typing span {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: chatTyping 1.4s infinite ease-in-out both;
+        }
+        .chat-typing span:nth-child(1) { animation-delay: -0.32s; }
+        .chat-typing span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes chatTyping {
+            0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        .chat-input-area {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+        }
+        .chat-input-wrap {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 8px 8px 8px 16px;
+            transition: border-color 0.2s;
+        }
+        .chat-input-wrap:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        .chat-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: none;
+            min-height: 20px;
+            max-height: 120px;
+            padding: 4px 0;
+        }
+        .chat-input::placeholder { color: var(--text-muted); }
+        .chat-send-btn {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+        }
+        .chat-send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+        .chat-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ────────────────────────────────────────
+           Loading Overlay
+        ──────────────────────────────────────── */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--overlay);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading-overlay.active { display: flex; }
+        .loading-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+        .loading-dots { display: flex; gap: 8px; }
+        .loading-dots span {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: dot-pulse 1.4s infinite ease-in-out both;
+        }
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes dot-pulse {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ────────────────────────────────────────
+           Utility Classes
+        ──────────────────────────────────────── */
+        .hidden { display: none !important; }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .copy-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: var(--accent-subtle);
+        }
+
+        .controls-bar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .panel-header {
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .panel-header-label {
+            font-size: 11.5px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 48px 24px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .empty-state i { font-size: 40px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-state p { font-size: 13px; line-height: 1.6; }
+
+        .api-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+        .api-badge.connected { background: var(--success-subtle); color: var(--success); border: 1px solid rgba(63,185,80,0.2); }
+        .api-badge.disconnected { background: var(--error-subtle); color: var(--error); border: 1px solid rgba(248,81,73,0.2); }
+        .pulse-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse-anim 2s ease-in-out infinite;
+        }
+        @keyframes pulse-anim { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 15px;
+            padding: 4px;
+            transition: color 0.2s ease;
+        }
+        .icon-btn:hover { color: var(--text-primary); }
+        .icon-btn.danger:hover { color: var(--error); }
+
+        .editor-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 13px;
+            gap: 8px;
+        }
+        .editor-loading i { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Step Cards (How It Works) ── */
+        .step-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .step-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--accent);
+        }
+        .step-icon {
+            width: 52px; height: 52px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 16px;
+        }
+        .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .feature-item:hover { background: var(--bg-tertiary); }
+
+        .improvement-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 6px 0;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* ────────────────────────────────────────
+           Chat History Sidebar
+        ──────────────────────────────────────── */
+        .chat-layout {
+            display: flex;
+            height: 100%;
+            width: 100%;
+        }
+        .chat-history-sidebar {
+            width: 280px;
+            min-width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .chat-history-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .chat-history-header h3 {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .chat-history-header h3 i {
+            color: var(--accent);
+            font-size: 14px;
+        }
+        .btn-new-chat {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11.5px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-new-chat:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-subtle);
+        }
+        .chat-history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .chat-history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 2px;
+            position: relative;
+        }
+        .chat-history-item:hover {
+            background: var(--bg-tertiary);
+        }
+        .chat-history-item.active {
+            background: var(--accent-subtle);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        .chat-history-item .chat-hist-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .chat-history-item.active .chat-hist-icon {
+            background: var(--accent);
+            color: white;
+        }
+        .chat-hist-info {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .chat-hist-title {
+            font-size: 12.5px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+        .chat-hist-time {
+            font-size: 10.5px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+        .chat-hist-delete {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 11px;
+            padding: 4px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: all 0.15s ease;
+        }
+        .chat-history-item:hover .chat-hist-delete { opacity: 1; }
+        .chat-hist-delete:hover { color: var(--error); background: var(--error-subtle); }
+        .chat-history-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .chat-history-empty i {
+            font-size: 28px;
+            margin-bottom: 10px;
+            opacity: 0.4;
+        }
+        .chat-history-empty p {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* ────────────────────────────────────────
+           Code History Dropdown
+        ──────────────────────────────────────── */
+        .code-history-wrapper {
+            position: relative;
+        }
+        .code-history-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 15px;
+            padding: 4px;
+            transition: color 0.2s ease;
+            position: relative;
+        }
+        .code-history-btn:hover { color: var(--text-primary); }
+        .code-history-btn .history-badge {
+            position: absolute;
+            top: -4px;
+            right: -6px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            display: none;
+        }
+        .code-history-btn .history-badge.visible { display: flex; }
+        .code-history-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            width: 380px;
+            max-height: 480px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow-lg);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .code-history-dropdown.open { display: flex; }
+        .code-history-dropdown-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .code-history-dropdown-header h4 {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .code-history-dropdown-header h4 i {
+            color: var(--accent);
+        }
+        .clear-code-history-btn {
+            font-size: 10.5px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+        .clear-code-history-btn:hover {
+            color: var(--error);
+            border-color: var(--error);
+            background: var(--error-subtle);
+        }
+        .code-history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .code-history-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 2px;
+            position: relative;
+        }
+        .code-history-item:hover { background: var(--bg-tertiary); }
+        .code-hist-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+        .code-hist-icon.review {
+            background: var(--accent-subtle);
+            color: var(--accent);
+        }
+        .code-hist-icon.rewrite {
+            background: var(--success-subtle);
+            color: var(--success);
+        }
+        .code-hist-icon.convert {
+            background: var(--warning-subtle);
+            color: var(--warning);
+        }
+        .code-hist-info {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .code-hist-title {
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+        .code-hist-meta {
+            font-size: 10.5px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 1px;
+        }
+        .code-hist-type {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 7px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .code-hist-type.review {
+            background: var(--accent-subtle);
+            color: var(--accent);
+        }
+        .code-hist-type.rewrite {
+            background: var(--success-subtle);
+            color: var(--success);
+        }
+        .code-hist-type.convert {
+            background: var(--warning-subtle);
+            color: var(--warning);
+        }
+        .code-hist-delete {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 11px;
+            padding: 4px;
+            border-radius: 4px;
+            opacity: 0;
+            transition: all 0.15s ease;
+        }
+        .code-history-item:hover .code-hist-delete { opacity: 1; }
+        .code-hist-delete:hover { color: var(--error); background: var(--error-subtle); }
+        .code-history-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .code-history-empty i {
+            font-size: 28px;
+            margin-bottom: 10px;
+            opacity: 0.4;
+        }
+        .code-history-empty p {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ═══════════════════ BACKGROUND ORBS ═══════════════════ -->
+    <div class="bg-orb bg-orb-1" aria-hidden="true"></div>
+    <div class="bg-orb bg-orb-2" aria-hidden="true"></div>
+
+    <!-- ═══════════════════ NAVBAR ═══════════════════ -->
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <div class="logo-icon"><img src="https://d2u1z1lopyfwlx.cloudfront.net/thumbnails/1c91452a-571e-51d5-bbfa-18a28e213d0c/aea87596-f96d-554b-b6b6-3f49ba6ea7ca.jpg" alt="Logo" /></div>
+            <span>AI Code Review</span>
+        </div>
+        <div class="navbar-actions">
+            <span id="apiBadge" class="api-badge connected">
+                <span class="pulse-dot"></span> API Connected
+            </span>
+            <div class="code-history-wrapper">
+                <button id="codeHistoryBtn" class="code-history-btn" title="Code History">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span id="codeHistoryBadge" class="history-badge">0</span>
+                </button>
+                <div id="codeHistoryDropdown" class="code-history-dropdown">
+                    <div class="code-history-dropdown-header">
+                        <h4><i class="fa-solid fa-clock-rotate-left"></i> Code History</h4>
+                        <button id="clearCodeHistoryBtn" class="clear-code-history-btn">Clear All</button>
+                    </div>
+                    <div id="codeHistoryList" class="code-history-list">
+                        <div class="code-history-empty">
+                            <i class="fa-solid fa-folder-open"></i>
+                            <p>No code history yet.<br>Review or rewrite code to see it here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
+                <span class="toggle-icon icon-sun">☀️</span>
+                <span class="toggle-icon icon-moon">🌙</span>
+                <div class="toggle-thumb"></div>
+            </button>
+            <a href="https://github.com" target="_blank" rel="noopener" title="GitHub" class="icon-btn">
+                <i class="fa-brands fa-github"></i>
+            </a>
+            <button id="logoutBtn" class="icon-btn danger" title="Log out">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ═══════════════════ TAB BAR ═══════════════════ -->
+    <div class="tab-bar">
+        <button data-tab="review" class="tab-btn">
+            <i class="fa-solid fa-magnifying-glass"></i> Code Review
+        </button>
+        <button data-tab="rewrite" class="tab-btn">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Rewrite Code
+        </button>
+        <button data-tab="convert" class="tab-btn">
+            <i class="fa-solid fa-right-left"></i> Convert Code
+        </button>
+        <button data-tab="howItWorks" class="tab-btn tab-active">
+            <i class="fa-solid fa-circle-info"></i> How It Works
+        </button>
+        <button data-tab="chat" class="tab-btn">
+            <i class="fa-solid fa-comments"></i> Chat
+        </button>
+    </div>
+
+    <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+    <div style="flex:1; overflow:hidden; display:flex; position:relative; z-index:10;">
+
+        <!-- ─────────── TAB: CODE REVIEW ─────────── -->
+        <div id="tab-review" class="tab-content" style="flex:1; display:none; overflow:hidden;">
+
+            <!-- LEFT PANEL -->
+            <div style="width:440px; min-width:380px; display:flex; flex-direction:column; flex-shrink:0; border-right:1px solid var(--border); background:var(--bg-secondary); overflow-y:auto; min-height:0;">
+                <div style="padding:20px; display:flex; flex-direction:column; gap:16px;">
+
+                    <!-- Language -->
+                    <div>
+                        <div class="section-label"><i class="fa-solid fa-code"></i> Language</div>
+                        <select id="langSelect" class="select-modern" style="width:100%;">
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="typescript">TypeScript</option>
+                            <option value="java">Java</option>
+                            <option value="cpp">C++</option>
+                            <option value="c">C</option>
+                            <option value="csharp">C#</option>
+                            <option value="go">Go</option>
+                            <option value="rust">Rust</option>
+                            <option value="ruby">Ruby</option>
+                            <option value="php">PHP</option>
+                            <option value="swift">Swift</option>
+                            <option value="kotlin">Kotlin</option>
+                            <option value="sql">SQL</option>
+                            <option value="html">HTML</option>
+                            <option value="css">CSS</option>
+                        </select>
+                    </div>
+
+                    <!-- Code Editor -->
+                    <div style="display:flex; flex-direction:column;">
+                        <div class="section-label"><i class="fa-solid fa-file-code"></i> Your Code</div>
+                        <div id="codeEditorWrap" class="editor-wrapper" style="height:300px;">
+                            <div id="codeEditorContainer" style="width:100%; height:100%;">
+                                <div class="editor-loading"><i class="fa-solid fa-spinner"></i> Loading editor…</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Focus Areas -->
+                    <div>
+                        <div class="section-label"><i class="fa-solid fa-crosshairs"></i> Focus Areas</div>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                            <button class="focus-chip selected" data-value="security">
+                                <span class="chip-icon"><i class="fa-solid fa-shield-halved"></i></span> Security
+                            </button>
+                            <button class="focus-chip selected" data-value="performance">
+                                <span class="chip-icon"><i class="fa-solid fa-gauge-high"></i></span> Performance
+                            </button>
+                            <button class="focus-chip selected" data-value="readability">
+                                <span class="chip-icon"><i class="fa-solid fa-book-open"></i></span> Readability
+                            </button>
+                            <button class="focus-chip selected" data-value="best_practices">
+                                <span class="chip-icon"><i class="fa-solid fa-star"></i></span> Best Practices
+                            </button>
+                            <button class="focus-chip" data-value="error_handling">
+                                <span class="chip-icon"><i class="fa-solid fa-bug"></i></span> Error Handling
+                            </button>
+                            <button class="focus-chip" data-value="documentation">
+                                <span class="chip-icon"><i class="fa-solid fa-file-lines"></i></span> Documentation
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div style="display:flex; gap:10px;">
+                        <button id="reviewBtn" class="btn btn-primary" style="flex:1;">
+                            <i class="fa-solid fa-magnifying-glass"></i> Review
+                        </button>
+                        <button id="rewriteFromReviewBtn" class="btn btn-success" style="flex:1;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Rewrite
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL — Review Results -->
+            <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0;">
+                <!-- Severity Bar -->
+                <div id="severityBar" class="controls-bar hidden" style="gap:12px; flex-wrap:wrap; flex-shrink:0;">
+                    <span style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-right:4px;">Issues Found</span>
+                    <span id="countCritical" class="severity-badge severity-critical"><i class="fa-solid fa-circle-xmark"></i> Critical: <b>0</b></span>
+                    <span id="countHigh" class="severity-badge severity-high"><i class="fa-solid fa-triangle-exclamation"></i> High: <b>0</b></span>
+                    <span id="countMedium" class="severity-badge severity-medium"><i class="fa-solid fa-circle-exclamation"></i> Medium: <b>0</b></span>
+                    <span id="countLow" class="severity-badge severity-low"><i class="fa-solid fa-circle-info"></i> Low: <b>0</b></span>
+                </div>
+
+                <!-- Result Card -->
+                <div style="flex:1; overflow-y:auto; padding:20px; min-height:0;">
+                    <div id="reviewResult" class="result-card card-3d" style="padding:24px; min-height:200px; position:relative;">
+                        <button id="copyReview" class="copy-btn hidden" style="position:absolute; top:16px; right:16px;">
+                            <i class="fa-regular fa-copy"></i> Copy
+                        </button>
+                        <div id="reviewPlaceholder" class="empty-state">
+                            <i class="fa-solid fa-magnifying-glass-chart"></i>
+                            <p>Review results will appear here</p>
+                            <p style="font-size:12px; margin-top:4px; opacity:0.6;">Paste code, select focus areas, then click <strong>Review</strong></p>
+                        </div>
+                        <div id="reviewOutput" class="hidden md-output" style="font-size:13.5px; line-height:1.7; color:var(--text-secondary);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─────────── TAB: REWRITE CODE ─────────── -->
+        <div id="tab-rewrite" class="tab-content" style="flex:1; display:none; flex-direction:column; overflow:hidden; min-height:0;">
+            <!-- Controls -->
+            <div class="controls-bar">
+                <div class="section-label" style="margin-bottom:0;"><i class="fa-solid fa-code"></i> Language</div>
+                <select id="rewriteLangSelect" class="select-modern">
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                    <option value="c">C</option>
+                    <option value="csharp">C#</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="ruby">Ruby</option>
+                    <option value="php">PHP</option>
+                    <option value="swift">Swift</option>
+                    <option value="kotlin">Kotlin</option>
+                    <option value="sql">SQL</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                </select>
+                <div style="flex:1;"></div>
+                <button id="rewriteBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Rewrite Code
+                </button>
+            </div>
+            <!-- Side-by-side -->
+            <div style="flex:1; display:flex; overflow:hidden; min-height:0;">
+                <!-- Original -->
+                <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-height:0;">
+                    <div class="panel-header"><span class="panel-header-label"><i class="fa-solid fa-file-lines"></i> Original Code</span></div>
+                    <div style="flex:1; position:relative;">
+                        <div id="rewriteInputContainer" style="height:100%;">
+                            <div class="editor-loading"><i class="fa-solid fa-spinner"></i> Loading editor…</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Rewritten -->
+                <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+                    <div class="panel-header">
+                        <span class="panel-header-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Rewritten Code</span>
+                        <button id="copyRewritten" class="copy-btn hidden"><i class="fa-regular fa-copy"></i> Copy</button>
+                    </div>
+                    <div style="flex:1; overflow-y:auto; min-height:0;">
+                        <div id="rewritePlaceholder" class="empty-state" style="height:100%;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <p>Rewritten code will appear here</p>
+                        </div>
+                        <div id="rewriteOutputContainer" class="hidden" style="height:100%; min-height:300px;"></div>
+                        <!-- Improvements -->
+                        <div id="improvementsSection" class="hidden" style="border-top:1px solid var(--border); padding:16px 20px;">
+                            <div class="section-label" style="margin-bottom:10px;">
+                                <i class="fa-solid fa-check-double" style="color:var(--success);"></i> Improvements Made
+                            </div>
+                            <div id="improvementsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─────────── TAB: CONVERT CODE ─────────── -->
+        <div id="tab-convert" class="tab-content" style="flex:1; display:none; flex-direction:column; overflow:hidden; min-height:0;">
+            <!-- Controls -->
+            <div class="controls-bar" style="gap:12px; flex-wrap:wrap;">
+                <div class="section-label" style="margin-bottom:0;"><i class="fa-solid fa-code"></i> From</div>
+                <select id="convertFromLang" class="select-modern">
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                    <option value="c">C</option>
+                    <option value="csharp">C#</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="ruby">Ruby</option>
+                    <option value="php">PHP</option>
+                    <option value="swift">Swift</option>
+                    <option value="kotlin">Kotlin</option>
+                    <option value="sql">SQL</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                </select>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <i class="fa-solid fa-arrow-right" style="color:var(--accent); font-size:14px;"></i>
+                </div>
+                <div class="section-label" style="margin-bottom:0;"><i class="fa-solid fa-code"></i> To</div>
+                <select id="convertToLang" class="select-modern">
+                    <option value="javascript">JavaScript</option>
+                    <option value="python">Python</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                    <option value="c">C</option>
+                    <option value="csharp">C#</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="ruby">Ruby</option>
+                    <option value="php">PHP</option>
+                    <option value="swift">Swift</option>
+                    <option value="kotlin">Kotlin</option>
+                    <option value="sql">SQL</option>
+                    <option value="html">HTML</option>
+                    <option value="css">CSS</option>
+                </select>
+                <button id="swapLangsBtn" class="icon-btn" title="Swap languages" style="font-size:16px; color:var(--accent);">
+                    <i class="fa-solid fa-right-left"></i>
+                </button>
+                <div style="flex:1;"></div>
+                <button id="convertBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-right-left"></i> Convert Code
+                </button>
+            </div>
+            <!-- Side-by-side -->
+            <div style="flex:1; display:flex; overflow:hidden; min-height:0;">
+                <!-- Source -->
+                <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid var(--border); min-height:0;">
+                    <div class="panel-header"><span class="panel-header-label"><i class="fa-solid fa-file-code"></i> Source Code</span></div>
+                    <div style="flex:1; position:relative;">
+                        <div id="convertInputContainer" style="height:100%;">
+                            <div class="editor-loading"><i class="fa-solid fa-spinner"></i> Loading editor…</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Converted -->
+                <div style="flex:1; display:flex; flex-direction:column; min-height:0;">
+                    <div class="panel-header">
+                        <span class="panel-header-label"><i class="fa-solid fa-right-left"></i> Converted Code</span>
+                        <button id="copyConverted" class="copy-btn hidden"><i class="fa-regular fa-copy"></i> Copy</button>
+                    </div>
+                    <div style="flex:1; overflow-y:auto; min-height:0;">
+                        <div id="convertPlaceholder" class="empty-state" style="height:100%;">
+                            <i class="fa-solid fa-right-left"></i>
+                            <p>Converted code will appear here</p>
+                        </div>
+                        <div id="convertOutputContainer" class="hidden" style="height:100%; min-height:300px;"></div>
+                        <!-- Conversion Notes -->
+                        <div id="convertNotesSection" class="hidden" style="border-top:1px solid var(--border); padding:16px 20px;">
+                            <div class="section-label" style="margin-bottom:10px;">
+                                <i class="fa-solid fa-clipboard-list" style="color:var(--warning);"></i> Conversion Notes
+                            </div>
+                            <div id="convertNotesList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─────────── TAB: HOW IT WORKS ─────────── -->
+        <div id="tab-howItWorks" class="tab-content" style="flex:1; display:block; overflow-y:auto;">
+            <div style="max-width:760px; margin:0 auto; padding:48px 24px;">
+                <!-- Hero -->
+                <div style="text-align:center; margin-bottom:40px;">
+                    <div style="width:72px; height:72px; border-radius:20px; background:linear-gradient(135deg, var(--accent), var(--accent-hover)); display:inline-flex; align-items:center; justify-content:center; font-size:28px; color:white; margin-bottom:20px; box-shadow:0 4px 20px var(--accent-glow);">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <h2 style="font-size:26px; font-weight:800; letter-spacing:-0.5px; margin-bottom:8px;">How It Works</h2>
+                    <p style="font-size:14px; color:var(--text-secondary); max-width:500px; margin:0 auto; line-height:1.6;">
+                        This agent uses Google's <strong style="color:var(--text-primary);">Gemini 2.5 Flash</strong> model to review and rewrite your code in seconds.
+                    </p>
+                </div>
+                <!-- Steps -->
+                <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom:32px;">
+                    <div class="step-card">
+                        <div class="step-icon" style="background:var(--accent-subtle); color:var(--accent);"><i class="fa-solid fa-paste"></i></div>
+                        <h3 style="font-size:15px; font-weight:700; margin-bottom:6px;">1. Paste Code</h3>
+                        <p style="font-size:12.5px; color:var(--text-secondary); line-height:1.5;">Paste your source code and select the programming language.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-icon" style="background:var(--success-subtle); color:var(--success);"><i class="fa-solid fa-brain"></i></div>
+                        <h3 style="font-size:15px; font-weight:700; margin-bottom:6px;">2. AI Analysis</h3>
+                        <p style="font-size:12.5px; color:var(--text-secondary); line-height:1.5;">Gemini 2.5 Flash analyses your code for bugs, security issues, and more.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-icon" style="background:rgba(255,166,87,0.12); color:#ffa657;"><i class="fa-solid fa-rocket"></i></div>
+                        <h3 style="font-size:15px; font-weight:700; margin-bottom:6px;">3. Get Results</h3>
+                        <p style="font-size:12.5px; color:var(--text-secondary); line-height:1.5;">Receive detailed review or production-ready rewritten code instantly.</p>
+                    </div>
+                </div>
+                <!-- Features -->
+                <div class="result-card" style="padding:24px; margin-bottom:32px;">
+                    <h3 style="font-size:15px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-bolt" style="color:var(--accent);"></i> Features
+                    </h3>
+                    <div class="feature-grid">
+                        <div class="feature-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:2px;"></i> Bug &amp; vulnerability detection</div>
+                        <div class="feature-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:2px;"></i> Production-grade code rewriting</div>
+                        <div class="feature-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:2px;"></i> Performance optimisation tips</div>
+                        <div class="feature-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:2px;"></i> Automatic docstrings &amp; comments</div>
+                        <div class="feature-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:2px;"></i> 16 programming languages</div>
+                        <div class="feature-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:2px;"></i> Severity-ranked issue reports</div>
+                        <div class="feature-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:2px;"></i> Side-by-side code comparison</div>
+                        <div class="feature-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:2px;"></i> Copy to clipboard</div>
+                    </div>
+                </div>
+                <!-- Get Started Button -->
+                <div style="text-align:center; margin-bottom:32px;">
+                    <button id="getStartedBtn" style="
+                        display:inline-flex; align-items:center; gap:10px;
+                        padding:14px 36px;
+                        border-radius:12px;
+                        border:none;
+                        background:linear-gradient(135deg, var(--accent), var(--accent-hover));
+                        color:white;
+                        font-size:16px;
+                        font-weight:700;
+                        font-family:'Inter', sans-serif;
+                        cursor:pointer;
+                        transition:all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                        box-shadow:0 4px 20px var(--accent-glow);
+                        letter-spacing:-0.2px;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 30px var(--accent-glow)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px var(--accent-glow)';">
+                        <i class="fa-solid fa-rocket"></i> Get Started
+                    </button>
+                </div>
+
+                <!-- Tech -->
+                <div style="text-align:center; font-size:12px; color:var(--text-muted); line-height:1.8;">
+                    <p>Powered by <strong style="color:var(--text-secondary);">Google Gemini</strong> &times; <strong style="color:var(--text-secondary);">Gemini 2.5 Flash</strong></p>
+                    <p>Built with FastAPI &middot; Monaco Editor &middot; Modern CSS</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─────────── TAB: CHAT ─────────── -->
+        <div id="tab-chat" class="tab-content" style="flex:1; display:none; overflow:hidden;">
+            <div class="chat-layout">
+                <!-- Chat History Sidebar -->
+                <div class="chat-history-sidebar">
+                    <div class="chat-history-header">
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> Chat History</h3>
+                        <button id="newChatBtn" class="btn-new-chat">
+                            <i class="fa-solid fa-plus"></i> New Chat
+                        </button>
+                    </div>
+                    <div id="chatHistoryList" class="chat-history-list">
+                        <div class="chat-history-empty">
+                            <i class="fa-solid fa-comments"></i>
+                            <p>No conversations yet.<br>Start a chat to see it here.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Chat Main Area -->
+            <div class="chat-container">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="chat-avatar ai">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-size:14px; font-weight:700; margin:0;">AI Code Assistant</h3>
+                            <p style="font-size:11px; color:var(--text-muted); margin:0;">Powered by Gemini 2.5 Flash</p>
+                        </div>
+                    </div>
+                    <button id="clearChatBtn" class="icon-btn" title="Clear chat" style="font-size:12px;">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+
+                <!-- Chat Messages -->
+                <div id="chatMessages" class="chat-messages">
+                    <div class="chat-welcome">
+                        <div style="width:56px; height:56px; border-radius:16px; background:linear-gradient(135deg, var(--accent), var(--accent-hover)); display:inline-flex; align-items:center; justify-content:center; font-size:22px; color:white; margin-bottom:14px; box-shadow:0 4px 16px var(--accent-glow);">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Ask me anything about your code</h3>
+                        <p style="font-size:12.5px; color:var(--text-secondary); max-width:400px; margin:0 auto; line-height:1.5;">
+                            Paste code in the Review tab first, then ask questions here. I can explain logic, find bugs, suggest improvements, and more.
+                        </p>
+                        <div class="chat-suggestions">
+                            <button class="chat-suggestion-chip" data-question="Explain what this code does step by step">
+                                <i class="fa-solid fa-book-open"></i> Explain this code
+                            </button>
+                            <button class="chat-suggestion-chip" data-question="What are the potential bugs in this code?">
+                                <i class="fa-solid fa-bug"></i> Find bugs
+                            </button>
+                            <button class="chat-suggestion-chip" data-question="How can I optimize this code for better performance?">
+                                <i class="fa-solid fa-bolt"></i> Optimize
+                            </button>
+                            <button class="chat-suggestion-chip" data-question="What are the best practices I should follow for this code?">
+                                <i class="fa-solid fa-star"></i> Best practices
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-area">
+                    <div class="chat-input-wrap">
+                        <textarea id="chatInput" class="chat-input" placeholder="Ask about your code…" rows="1"></textarea>
+                        <button id="chatSendBtn" class="chat-send-btn" title="Send message (Enter)">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <p style="font-size:10.5px; color:var(--text-muted); text-align:center; margin-top:6px;">
+                        Press <kbd style="background:var(--bg-tertiary); padding:1px 5px; border-radius:3px; font-size:10px; border:1px solid var(--border);">Enter</kbd> to send · <kbd style="background:var(--bg-tertiary); padding:1px 5px; border-radius:3px; font-size:10px; border:1px solid var(--border);">Shift+Enter</kbd> for new line
+                    </p>
+                </div>
+            </div>
+            </div>  <!-- end chat-layout -->
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════ LOADING OVERLAY ═══════════════════ -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-card">
+            <div class="loading-dots"><span></span><span></span><span></span></div>
+            <p id="loadingText" style="font-size:13px; color:var(--text-secondary);">Analysing with Gemini 2.5 Flash…</p>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ SCRIPT ═══════════════════ -->
+    <script>
+    (function () {
+        "use strict";
+
+        /* ═══════════════════════════════════════
+           AUTH GUARD
+        ═══════════════════════════════════════ */
+        if (sessionStorage.getItem("authenticated") !== "true") {
+            window.location.href = "/login";
+        }
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+            sessionStorage.clear();
+            window.location.href = "/login";
+        });
+
+        /* ═══════════════════════════════════════
+           CONSTANTS
+        ═══════════════════════════════════════ */
+        const API = "https://ai-code-review-rewrite-agent-1.onrender.com";
+
+        // Map dropdown language values to Monaco language IDs
+        const MONACO_LANG_MAP = {
+            "python": "python",
+            "javascript": "javascript",
+            "typescript": "typescript",
+            "java": "java",
+            "cpp": "cpp",
+            "c": "c",
+            "csharp": "csharp",
+            "go": "go",
+            "rust": "rust",
+            "ruby": "ruby",
+            "php": "php",
+            "swift": "swift",
+            "kotlin": "kotlin",
+            "sql": "sql",
+            "html": "html",
+            "css": "css",
+        };
+        function getMonacoLang(val) { return MONACO_LANG_MAP[val] || val; }
+
+        /* ═══════════════════════════════════════
+           THEME MANAGEMENT
+        ═══════════════════════════════════════ */
+        const html = document.documentElement;
+        const body = document.body;
+        const themeToggle = document.getElementById("themeToggle");
+        const hljsDark = document.getElementById("hljs-dark");
+        const hljsLight = document.getElementById("hljs-light");
+
+        const savedTheme = localStorage.getItem("app-theme") || "dark";
+        html.setAttribute("data-theme", savedTheme);
+        applyHljsTheme(savedTheme);
+
+        themeToggle.addEventListener("click", () => {
+            const current = html.getAttribute("data-theme");
+            const next = current === "dark" ? "light" : "dark";
+
+            // Enable smooth transition class temporarily
+            body.classList.add("theme-transitioning");
+            html.setAttribute("data-theme", next);
+            localStorage.setItem("app-theme", next);
+            applyHljsTheme(next);
+            applyMonacoTheme(next);
+
+            setTimeout(() => body.classList.remove("theme-transitioning"), 400);
+        });
+
+        function applyHljsTheme(theme) {
+            hljsDark.disabled  = theme !== "dark";
+            hljsLight.disabled = theme !== "light";
+        }
+
+        function applyMonacoTheme(theme) {
+            if (typeof monaco !== "undefined") {
+                monaco.editor.setTheme(theme === "dark" ? "app-dark" : "app-light");
+            }
+        }
+
+        /* ═══════════════════════════════════════
+           MARKED CONFIG
+        ═══════════════════════════════════════ */
+        marked.setOptions({
+            highlight(code, lang) {
+                if (lang && hljs.getLanguage(lang)) return hljs.highlight(code, { language: lang }).value;
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+        });
+
+        /* ═══════════════════════════════════════
+           TAB SWITCHING
+        ═══════════════════════════════════════ */
+        const tabBtns = document.querySelectorAll(".tab-btn");
+        const tabContents = document.querySelectorAll(".tab-content");
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                tabBtns.forEach(b => b.classList.remove("tab-active"));
+                btn.classList.add("tab-active");
+                tabContents.forEach(c => { c.style.display = "none"; });
+                const target = document.getElementById("tab-" + btn.dataset.tab);
+                target.style.display = "flex";
+                // Layout Monaco editors in the newly visible tab
+                requestAnimationFrame(() => {
+                    if (btn.dataset.tab === "review" && codeEditor) codeEditor.layout();
+                    if (btn.dataset.tab === "rewrite") {
+                        if (rewriteInputEditor) rewriteInputEditor.layout();
+                        if (rewriteOutputEditor) rewriteOutputEditor.layout();
+                    }
+                    if (btn.dataset.tab === "convert") {
+                        if (convertInputEditor) convertInputEditor.layout();
+                        if (convertOutputEditor) convertOutputEditor.layout();
+                    }
+                    if (btn.dataset.tab === "howItWorks") {
+                        target.style.display = "block";
+                        target.style.overflowY = "auto";
+                    }
+                });
+            });
+        });
+
+        /* ═══════════════════════════════════════
+           GET STARTED BUTTON
+        ═══════════════════════════════════════ */
+        document.getElementById("getStartedBtn").addEventListener("click", () => {
+            document.querySelector('[data-tab="review"]').click();
+        });
+
+        /* ═══════════════════════════════════════
+           FOCUS AREA CHIPS
+        ═══════════════════════════════════════ */
+        document.querySelectorAll(".focus-chip").forEach(chip => {
+            chip.addEventListener("click", () => chip.classList.toggle("selected"));
+        });
+
+        /* ═══════════════════════════════════════
+           LOADING HELPERS
+        ═══════════════════════════════════════ */
+        const overlay = document.getElementById("loadingOverlay");
+        const loadingText = document.getElementById("loadingText");
+        function showLoading(msg) { loadingText.textContent = msg; overlay.classList.add("active"); }
+        function hideLoading() { overlay.classList.remove("active"); }
+
+        // Helper: fetch with timeout (default 30s) so UI never hangs forever
+        function fetchWithTimeout(url, options, timeoutMs = 30000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            return fetch(url, { ...options, signal: controller.signal })
+                .then(res => { clearTimeout(timer); return res; })
+                .catch(err => {
+                    clearTimeout(timer);
+                    if (err.name === 'AbortError') {
+                        throw new Error('Request timed out. The API may be rate-limited — please wait 30-60 seconds and try again.');
+                    }
+                    throw err;
+                });
+        }
+
+        /* ═══════════════════════════════════════
+           CLIPBOARD HELPER
+        ═══════════════════════════════════════ */
+        function copyText(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const prev = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                const origColor = btn.style.color;
+                const origBorder = btn.style.borderColor;
+                btn.style.color = "var(--success)";
+                btn.style.borderColor = "var(--success)";
+                setTimeout(() => {
+                    btn.innerHTML = prev;
+                    btn.style.color = origColor;
+                    btn.style.borderColor = origBorder;
+                }, 1500);
+            });
+        }
+
+        /* ═══════════════════════════════════════
+           MONACO EDITOR SETUP
+        ═══════════════════════════════════════ */
+        let codeEditor = null;
+        let rewriteInputEditor = null;
+        let rewriteOutputEditor = null;
+        let convertInputEditor = null;
+        let convertOutputEditor = null;
+
+        const MONACO_CDN = "https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min";
+
+        require.config({ paths: { vs: MONACO_CDN + "/vs" } });
+
+        window.MonacoEnvironment = {
+            getWorker: function (workerId, label) {
+                const workerUrl = MONACO_CDN + "/vs/base/worker/workerMain.js";
+                const proxyCode = [
+                    'self.MonacoEnvironment = { baseUrl: "' + MONACO_CDN + '/" };',
+                    'importScripts("' + workerUrl + '");'
+                ].join("\n");
+                const blob = new Blob([proxyCode], { type: "text/javascript" });
+                return new Worker(URL.createObjectURL(blob));
+            }
+        };
+
+        // Fallback: if Monaco doesn't load in 8s, show textareas
+        let monacoLoaded = false;
+        setTimeout(function () {
+            if (!monacoLoaded) {
+                console.warn("Monaco timed out — falling back to textareas");
+                initFallbackTextareas();
+            }
+        }, 8000);
+
+        function initFallbackTextareas() {
+            const style = "width:100%;height:100%;background:var(--bg-primary);color:var(--text-primary);border:none;outline:none;resize:none;padding:14px;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;display:block;";
+            ["codeEditorContainer","rewriteInputContainer","convertInputContainer"].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el && !el.querySelector(".monaco-editor")) {
+                    el.innerHTML = '<textarea id="' + id + '_ta" style="' + style + '" placeholder="Paste your code here…" spellcheck="false"></textarea>';
+                }
+            });
+            var ro = document.getElementById("rewriteOutputContainer");
+            if (ro && !ro.querySelector(".monaco-editor")) {
+                ro.innerHTML = '<pre id="rewriteOutputContainer_pre" style="' + style + 'overflow:auto;white-space:pre;"></pre>';
+            }
+            var co = document.getElementById("convertOutputContainer");
+            if (co && !co.querySelector(".monaco-editor")) {
+                co.innerHTML = '<pre id="convertOutputContainer_pre" style="' + style + 'overflow:auto;white-space:pre;"></pre>';
+            }
+        }
+
+        require(["vs/editor/editor.main"], function () {
+            monacoLoaded = true;
+
+            // Clear the "Loading editor..." placeholders
+            ["codeEditorContainer","rewriteInputContainer","rewriteOutputContainer","convertInputContainer","convertOutputContainer"].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    var loader = el.querySelector(".editor-loading");
+                    if (loader) loader.remove();
+                }
+            });
+
+            /* ── Define Custom Themes ── */
+            monaco.editor.defineTheme("app-dark", {
+                base: "vs-dark",
+                inherit: true,
+                rules: [
+                    // ── General tokens ──
+                    { token: "comment",          foreground: "6a737d", fontStyle: "italic" },
+                    { token: "keyword",          foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string",           foreground: "a5d6ff" },
+                    { token: "string.escape",    foreground: "79c0ff" },
+                    { token: "number",           foreground: "79c0ff" },
+                    { token: "number.float",     foreground: "79c0ff" },
+                    { token: "number.hex",       foreground: "79c0ff" },
+                    { token: "type",             foreground: "ffa657", fontStyle: "bold" },
+                    { token: "type.identifier",  foreground: "ffa657" },
+                    { token: "function",         foreground: "d2a8ff" },
+                    { token: "variable",         foreground: "ffa657" },
+                    { token: "variable.predefined", foreground: "e0af68" },
+                    { token: "operator",         foreground: "ff7b72" },
+                    { token: "delimiter",        foreground: "8b949e" },
+                    { token: "delimiter.bracket", foreground: "e6edf3" },
+                    { token: "delimiter.parenthesis", foreground: "e6edf3" },
+                    { token: "delimiter.curly",  foreground: "e6edf3" },
+                    { token: "delimiter.square", foreground: "e6edf3" },
+                    { token: "delimiter.angle",  foreground: "8b949e" },
+                    { token: "constant",         foreground: "79c0ff" },
+                    { token: "annotation",       foreground: "d2a8ff", fontStyle: "italic" },
+                    { token: "identifier",       foreground: "e6edf3" },
+                    { token: "regexp",           foreground: "7ee787" },
+
+                    // ── HTML / XML ──
+                    { token: "tag",              foreground: "7ee787", fontStyle: "bold" },
+                    { token: "tag.html",         foreground: "7ee787", fontStyle: "bold" },
+                    { token: "tag.xml",          foreground: "7ee787", fontStyle: "bold" },
+                    { token: "metatag",          foreground: "ff7b72" },
+                    { token: "metatag.html",     foreground: "ff7b72" },
+                    { token: "metatag.content.html", foreground: "e6edf3" },
+                    { token: "attribute.name",   foreground: "d2a8ff" },
+                    { token: "attribute.name.html", foreground: "d2a8ff" },
+                    { token: "attribute.value",  foreground: "a5d6ff" },
+                    { token: "attribute.value.html", foreground: "a5d6ff" },
+                    { token: "attribute.value.number", foreground: "79c0ff" },
+                    { token: "attribute.value.unit", foreground: "ffa657" },
+                    { token: "delimiter.html",   foreground: "8b949e" },
+                    { token: "string.html",      foreground: "a5d6ff" },
+
+                    // ── CSS ──
+                    { token: "tag.css",            foreground: "7ee787", fontStyle: "bold" },
+                    { token: "attribute.name.css",  foreground: "79c0ff" },
+                    { token: "attribute.value.css",  foreground: "a5d6ff" },
+                    { token: "attribute.value.number.css", foreground: "79c0ff" },
+                    { token: "attribute.value.unit.css",   foreground: "ffa657" },
+                    { token: "attribute.value.hex.css",    foreground: "e0af68" },
+                    { token: "keyword.css",        foreground: "ff7b72" },
+                    { token: "number.css",         foreground: "79c0ff" },
+                    { token: "string.css",         foreground: "a5d6ff" },
+                    { token: "delimiter.css",      foreground: "8b949e" },
+                    { token: "delimiter.parenthesis.css", foreground: "e6edf3" },
+
+                    // ── Python ──
+                    { token: "keyword.python",     foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.python",      foreground: "a5d6ff" },
+                    { token: "number.python",      foreground: "79c0ff" },
+                    { token: "identifier.python",  foreground: "e6edf3" },
+                    { token: "type.python",        foreground: "ffa657" },
+                    { token: "decorator.python",   foreground: "d2a8ff", fontStyle: "italic" },
+                    { token: "tag.python",         foreground: "d2a8ff" },
+
+                    // ── JavaScript / TypeScript ──
+                    { token: "keyword.js",         foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "keyword.ts",         foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.js",          foreground: "a5d6ff" },
+                    { token: "string.ts",          foreground: "a5d6ff" },
+                    { token: "number.js",          foreground: "79c0ff" },
+                    { token: "number.ts",          foreground: "79c0ff" },
+                    { token: "regexp.js",          foreground: "7ee787" },
+                    { token: "regexp.ts",          foreground: "7ee787" },
+                    { token: "type.ts",            foreground: "ffa657", fontStyle: "bold" },
+                    { token: "type.identifier.ts", foreground: "ffa657" },
+                    { token: "delimiter.bracket.js", foreground: "e6edf3" },
+                    { token: "delimiter.bracket.ts", foreground: "e6edf3" },
+
+                    // ── Java ──
+                    { token: "keyword.java",       foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.java",        foreground: "a5d6ff" },
+                    { token: "number.java",        foreground: "79c0ff" },
+                    { token: "type.identifier.java", foreground: "ffa657" },
+                    { token: "annotation.java",    foreground: "d2a8ff", fontStyle: "italic" },
+                    { token: "delimiter.java",     foreground: "8b949e" },
+
+                    // ── C / C++ ──
+                    { token: "keyword.cpp",        foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "keyword.c",          foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.cpp",         foreground: "a5d6ff" },
+                    { token: "string.c",           foreground: "a5d6ff" },
+                    { token: "number.cpp",         foreground: "79c0ff" },
+                    { token: "number.c",           foreground: "79c0ff" },
+                    { token: "type.cpp",           foreground: "ffa657", fontStyle: "bold" },
+                    { token: "type.c",             foreground: "ffa657", fontStyle: "bold" },
+                    { token: "delimiter.cpp",      foreground: "8b949e" },
+                    { token: "delimiter.c",        foreground: "8b949e" },
+                    { token: "identifier.cpp",     foreground: "e6edf3" },
+
+                    // ── C# ──
+                    { token: "keyword.cs",         foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.cs",          foreground: "a5d6ff" },
+                    { token: "number.cs",          foreground: "79c0ff" },
+                    { token: "type.identifier.cs", foreground: "ffa657" },
+                    { token: "annotation.cs",      foreground: "d2a8ff", fontStyle: "italic" },
+
+                    // ── Go ──
+                    { token: "keyword.go",         foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.go",          foreground: "a5d6ff" },
+                    { token: "number.go",          foreground: "79c0ff" },
+                    { token: "type.go",            foreground: "ffa657", fontStyle: "bold" },
+                    { token: "comment.go",         foreground: "6a737d", fontStyle: "italic" },
+
+                    // ── Rust ──
+                    { token: "keyword.rust",       foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.rust",        foreground: "a5d6ff" },
+                    { token: "number.rust",        foreground: "79c0ff" },
+                    { token: "type.rust",          foreground: "ffa657", fontStyle: "bold" },
+                    { token: "attribute.rust",     foreground: "d2a8ff" },
+
+                    // ── PHP ──
+                    { token: "keyword.php",        foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.php",         foreground: "a5d6ff" },
+                    { token: "number.php",         foreground: "79c0ff" },
+                    { token: "metatag.php",        foreground: "ff7b72" },
+                    { token: "variable.php",       foreground: "e0af68" },
+                    { token: "tag.php",            foreground: "7ee787" },
+
+                    // ── Ruby ──
+                    { token: "keyword.ruby",       foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.ruby",        foreground: "a5d6ff" },
+                    { token: "number.ruby",        foreground: "79c0ff" },
+                    { token: "regexp.ruby",        foreground: "7ee787" },
+                    { token: "variable.predefined.ruby", foreground: "e0af68" },
+
+                    // ── SQL ──
+                    { token: "keyword.sql",        foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.sql",         foreground: "a5d6ff" },
+                    { token: "number.sql",         foreground: "79c0ff" },
+                    { token: "operator.sql",       foreground: "ffa657" },
+                    { token: "predefined.sql",     foreground: "d2a8ff" },
+
+                    // ── Kotlin ──
+                    { token: "keyword.kt",         foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.kt",          foreground: "a5d6ff" },
+                    { token: "number.kt",          foreground: "79c0ff" },
+                    { token: "annotation.kt",      foreground: "d2a8ff", fontStyle: "italic" },
+                    { token: "type.identifier.kt", foreground: "ffa657" },
+
+                    // ── Swift ──
+                    { token: "keyword.swift",      foreground: "ff7b72", fontStyle: "bold" },
+                    { token: "string.swift",       foreground: "a5d6ff" },
+                    { token: "number.swift",       foreground: "79c0ff" },
+                    { token: "type.swift",         foreground: "ffa657", fontStyle: "bold" },
+                    { token: "attribute.swift",    foreground: "d2a8ff" },
+                ],
+                colors: {
+                    "editor.background":                  "#0d1117",
+                    "editor.foreground":                  "#e6edf3",
+                    "editor.lineHighlightBackground":     "#161b2260",
+                    "editor.selectionBackground":         "#264f7840",
+                    "editorCursor.foreground":            "#6366f1",
+                    "editor.selectionHighlightBackground":"#3fb95020",
+                    "editorLineNumber.foreground":        "#484f58",
+                    "editorLineNumber.activeForeground":  "#8b949e",
+                    "editorIndentGuide.background":       "#21262d",
+                    "editorIndentGuide.activeBackground": "#30363d",
+                    "editorBracketMatch.background":      "#6366f120",
+                    "editorBracketMatch.border":          "#6366f140",
+                    "scrollbar.shadow":                   "#00000000",
+                    "editorOverviewRuler.border":         "#00000000",
+                    "editorBracketHighlight.foreground1": "#ffa657",
+                    "editorBracketHighlight.foreground2": "#d2a8ff",
+                    "editorBracketHighlight.foreground3": "#79c0ff",
+                    "editorBracketHighlight.foreground4": "#7ee787",
+                    "editorBracketHighlight.foreground5": "#ff7b72",
+                    "editorBracketHighlight.foreground6": "#a5d6ff",
+                }
+            });
+
+            monaco.editor.defineTheme("app-light", {
+                base: "vs",
+                inherit: true,
+                rules: [
+                    // ── General tokens ──
+                    { token: "comment",          foreground: "6a737d", fontStyle: "italic" },
+                    { token: "keyword",          foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string",           foreground: "0a3069" },
+                    { token: "string.escape",    foreground: "0550ae" },
+                    { token: "number",           foreground: "0550ae" },
+                    { token: "number.float",     foreground: "0550ae" },
+                    { token: "number.hex",       foreground: "0550ae" },
+                    { token: "type",             foreground: "953800", fontStyle: "bold" },
+                    { token: "type.identifier",  foreground: "953800" },
+                    { token: "function",         foreground: "8250df" },
+                    { token: "variable",         foreground: "953800" },
+                    { token: "variable.predefined", foreground: "7d4e00" },
+                    { token: "operator",         foreground: "cf222e" },
+                    { token: "delimiter",        foreground: "656d76" },
+                    { token: "delimiter.bracket", foreground: "1f2328" },
+                    { token: "delimiter.parenthesis", foreground: "1f2328" },
+                    { token: "delimiter.curly",  foreground: "1f2328" },
+                    { token: "delimiter.square", foreground: "1f2328" },
+                    { token: "delimiter.angle",  foreground: "656d76" },
+                    { token: "constant",         foreground: "0550ae" },
+                    { token: "annotation",       foreground: "8250df", fontStyle: "italic" },
+                    { token: "identifier",       foreground: "1f2328" },
+                    { token: "regexp",           foreground: "116329" },
+
+                    // ── HTML / XML ──
+                    { token: "tag",              foreground: "116329", fontStyle: "bold" },
+                    { token: "tag.html",         foreground: "116329", fontStyle: "bold" },
+                    { token: "tag.xml",          foreground: "116329", fontStyle: "bold" },
+                    { token: "metatag",          foreground: "cf222e" },
+                    { token: "metatag.html",     foreground: "cf222e" },
+                    { token: "metatag.content.html", foreground: "1f2328" },
+                    { token: "attribute.name",   foreground: "8250df" },
+                    { token: "attribute.name.html", foreground: "8250df" },
+                    { token: "attribute.value",  foreground: "0a3069" },
+                    { token: "attribute.value.html", foreground: "0a3069" },
+                    { token: "attribute.value.number", foreground: "0550ae" },
+                    { token: "attribute.value.unit", foreground: "953800" },
+                    { token: "delimiter.html",   foreground: "656d76" },
+                    { token: "string.html",      foreground: "0a3069" },
+
+                    // ── CSS ──
+                    { token: "tag.css",            foreground: "116329", fontStyle: "bold" },
+                    { token: "attribute.name.css",  foreground: "0550ae" },
+                    { token: "attribute.value.css",  foreground: "0a3069" },
+                    { token: "attribute.value.number.css", foreground: "0550ae" },
+                    { token: "attribute.value.unit.css",   foreground: "953800" },
+                    { token: "attribute.value.hex.css",    foreground: "7d4e00" },
+                    { token: "keyword.css",        foreground: "cf222e" },
+                    { token: "number.css",         foreground: "0550ae" },
+                    { token: "string.css",         foreground: "0a3069" },
+                    { token: "delimiter.css",      foreground: "656d76" },
+                    { token: "delimiter.parenthesis.css", foreground: "1f2328" },
+
+                    // ── Python ──
+                    { token: "keyword.python",     foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.python",      foreground: "0a3069" },
+                    { token: "number.python",      foreground: "0550ae" },
+                    { token: "identifier.python",  foreground: "1f2328" },
+                    { token: "type.python",        foreground: "953800" },
+                    { token: "decorator.python",   foreground: "8250df", fontStyle: "italic" },
+                    { token: "tag.python",         foreground: "8250df" },
+
+                    // ── JavaScript / TypeScript ──
+                    { token: "keyword.js",         foreground: "cf222e", fontStyle: "bold" },
+                    { token: "keyword.ts",         foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.js",          foreground: "0a3069" },
+                    { token: "string.ts",          foreground: "0a3069" },
+                    { token: "number.js",          foreground: "0550ae" },
+                    { token: "number.ts",          foreground: "0550ae" },
+                    { token: "regexp.js",          foreground: "116329" },
+                    { token: "regexp.ts",          foreground: "116329" },
+                    { token: "type.ts",            foreground: "953800", fontStyle: "bold" },
+                    { token: "type.identifier.ts", foreground: "953800" },
+                    { token: "delimiter.bracket.js", foreground: "1f2328" },
+                    { token: "delimiter.bracket.ts", foreground: "1f2328" },
+
+                    // ── Java ──
+                    { token: "keyword.java",       foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.java",        foreground: "0a3069" },
+                    { token: "number.java",        foreground: "0550ae" },
+                    { token: "type.identifier.java", foreground: "953800" },
+                    { token: "annotation.java",    foreground: "8250df", fontStyle: "italic" },
+                    { token: "delimiter.java",     foreground: "656d76" },
+
+                    // ── C / C++ ──
+                    { token: "keyword.cpp",        foreground: "cf222e", fontStyle: "bold" },
+                    { token: "keyword.c",          foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.cpp",         foreground: "0a3069" },
+                    { token: "string.c",           foreground: "0a3069" },
+                    { token: "number.cpp",         foreground: "0550ae" },
+                    { token: "number.c",           foreground: "0550ae" },
+                    { token: "type.cpp",           foreground: "953800", fontStyle: "bold" },
+                    { token: "type.c",             foreground: "953800", fontStyle: "bold" },
+                    { token: "delimiter.cpp",      foreground: "656d76" },
+                    { token: "delimiter.c",        foreground: "656d76" },
+                    { token: "identifier.cpp",     foreground: "1f2328" },
+
+                    // ── C# ──
+                    { token: "keyword.cs",         foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.cs",          foreground: "0a3069" },
+                    { token: "number.cs",          foreground: "0550ae" },
+                    { token: "type.identifier.cs", foreground: "953800" },
+                    { token: "annotation.cs",      foreground: "8250df", fontStyle: "italic" },
+
+                    // ── Go ──
+                    { token: "keyword.go",         foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.go",          foreground: "0a3069" },
+                    { token: "number.go",          foreground: "0550ae" },
+                    { token: "type.go",            foreground: "953800", fontStyle: "bold" },
+                    { token: "comment.go",         foreground: "6a737d", fontStyle: "italic" },
+
+                    // ── Rust ──
+                    { token: "keyword.rust",       foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.rust",        foreground: "0a3069" },
+                    { token: "number.rust",        foreground: "0550ae" },
+                    { token: "type.rust",          foreground: "953800", fontStyle: "bold" },
+                    { token: "attribute.rust",     foreground: "8250df" },
+
+                    // ── PHP ──
+                    { token: "keyword.php",        foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.php",         foreground: "0a3069" },
+                    { token: "number.php",         foreground: "0550ae" },
+                    { token: "metatag.php",        foreground: "cf222e" },
+                    { token: "variable.php",       foreground: "7d4e00" },
+                    { token: "tag.php",            foreground: "116329" },
+
+                    // ── Ruby ──
+                    { token: "keyword.ruby",       foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.ruby",        foreground: "0a3069" },
+                    { token: "number.ruby",        foreground: "0550ae" },
+                    { token: "regexp.ruby",        foreground: "116329" },
+                    { token: "variable.predefined.ruby", foreground: "7d4e00" },
+
+                    // ── SQL ──
+                    { token: "keyword.sql",        foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.sql",         foreground: "0a3069" },
+                    { token: "number.sql",         foreground: "0550ae" },
+                    { token: "operator.sql",       foreground: "953800" },
+                    { token: "predefined.sql",     foreground: "8250df" },
+
+                    // ── Kotlin ──
+                    { token: "keyword.kt",         foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.kt",          foreground: "0a3069" },
+                    { token: "number.kt",          foreground: "0550ae" },
+                    { token: "annotation.kt",      foreground: "8250df", fontStyle: "italic" },
+                    { token: "type.identifier.kt", foreground: "953800" },
+
+                    // ── Swift ──
+                    { token: "keyword.swift",      foreground: "cf222e", fontStyle: "bold" },
+                    { token: "string.swift",       foreground: "0a3069" },
+                    { token: "number.swift",       foreground: "0550ae" },
+                    { token: "type.swift",         foreground: "953800", fontStyle: "bold" },
+                    { token: "attribute.swift",    foreground: "8250df" },
+                ],
+                colors: {
+                    "editor.background":                  "#ffffff",
+                    "editor.foreground":                  "#1f2328",
+                    "editor.lineHighlightBackground":     "#f6f8fa",
+                    "editor.selectionBackground":         "#0969da20",
+                    "editorCursor.foreground":            "#4f46e5",
+                    "editor.selectionHighlightBackground":"#1a7f3715",
+                    "editorLineNumber.foreground":        "#8b949e",
+                    "editorLineNumber.activeForeground":  "#1f2328",
+                    "editorIndentGuide.background":       "#d0d7de80",
+                    "editorIndentGuide.activeBackground": "#d0d7de",
+                    "editorBracketMatch.background":      "#4f46e515",
+                    "editorBracketMatch.border":          "#4f46e530",
+                    "scrollbar.shadow":                   "#00000000",
+                    "editorOverviewRuler.border":         "#00000000",
+                    "editorBracketHighlight.foreground1": "#953800",
+                    "editorBracketHighlight.foreground2": "#8250df",
+                    "editorBracketHighlight.foreground3": "#0550ae",
+                    "editorBracketHighlight.foreground4": "#116329",
+                    "editorBracketHighlight.foreground5": "#cf222e",
+                    "editorBracketHighlight.foreground6": "#0a3069",
+                }
+            });
+
+            const currentTheme = html.getAttribute("data-theme") === "dark" ? "app-dark" : "app-light";
+
+            const sharedOpts = {
+                fontSize: 14,
+                fontFamily: "'JetBrains Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace",
+                fontLigatures: true,
+                lineNumbers: "on",
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                smoothScrolling: true,
+                cursorBlinking: "smooth",
+                cursorSmoothCaretAnimation: "on",
+                renderLineHighlight: "line",
+                bracketPairColorization: { enabled: true },
+                guides: { bracketPairs: true, indentation: true },
+                folding: true,
+                automaticLayout: true,
+                padding: { top: 12, bottom: 12 },
+                roundedSelection: true,
+                scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+                overviewRulerBorder: false,
+                contextmenu: true,
+                wordWrap: "off",
+                tabSize: 4,
+                insertSpaces: true,
+            };
+
+            // ── Review Tab Editor ──
+            codeEditor = monaco.editor.create(document.getElementById("codeEditorContainer"), {
+                ...sharedOpts, value: "", language: "python", theme: currentTheme,
+            });
+
+            // ── Rewrite Input Editor ──
+            rewriteInputEditor = monaco.editor.create(document.getElementById("rewriteInputContainer"), {
+                ...sharedOpts, value: "", language: "python", theme: currentTheme,
+            });
+
+            // ── Rewrite Output Editor (read-only) ──
+            rewriteOutputEditor = monaco.editor.create(document.getElementById("rewriteOutputContainer"), {
+                ...sharedOpts, value: "", language: "python", theme: currentTheme,
+                readOnly: true, domReadOnly: true,
+            });
+
+            // ── Convert Input Editor ──
+            convertInputEditor = monaco.editor.create(document.getElementById("convertInputContainer"), {
+                ...sharedOpts, value: "", language: "python", theme: currentTheme,
+            });
+
+            // ── Convert Output Editor (read-only) ──
+            convertOutputEditor = monaco.editor.create(document.getElementById("convertOutputContainer"), {
+                ...sharedOpts, value: "", language: "javascript", theme: currentTheme,
+                readOnly: true, domReadOnly: true,
+            });
+
+            // Activate glow on focus
+            codeEditor.onDidFocusEditorText(() => document.getElementById("codeEditorWrap").classList.add("active"));
+            codeEditor.onDidBlurEditorText(() => document.getElementById("codeEditorWrap").classList.remove("active"));
+
+            // ── Sync language dropdown ──
+            document.getElementById("langSelect").addEventListener("change", function () {
+                monaco.editor.setModelLanguage(codeEditor.getModel(), getMonacoLang(this.value));
+            });
+            document.getElementById("rewriteLangSelect").addEventListener("change", function () {
+                monaco.editor.setModelLanguage(rewriteInputEditor.getModel(), getMonacoLang(this.value));
+                monaco.editor.setModelLanguage(rewriteOutputEditor.getModel(), getMonacoLang(this.value));
+            });
+            document.getElementById("convertFromLang").addEventListener("change", function () {
+                if (convertInputEditor) monaco.editor.setModelLanguage(convertInputEditor.getModel(), getMonacoLang(this.value));
+            });
+            document.getElementById("convertToLang").addEventListener("change", function () {
+                if (convertOutputEditor) monaco.editor.setModelLanguage(convertOutputEditor.getModel(), getMonacoLang(this.value));
+            });
+
+            // ── Responsive layout ──
+            window.addEventListener("resize", () => {
+                codeEditor && codeEditor.layout();
+                rewriteInputEditor && rewriteInputEditor.layout();
+                rewriteOutputEditor && rewriteOutputEditor.layout();
+                convertInputEditor && convertInputEditor.layout();
+                convertOutputEditor && convertOutputEditor.layout();
+            });
+
+            // Force layout multiple times to ensure proper rendering
+            function forceAllLayouts() {
+                if (codeEditor) codeEditor.layout();
+                if (rewriteInputEditor) rewriteInputEditor.layout();
+                if (rewriteOutputEditor) rewriteOutputEditor.layout();
+                if (convertInputEditor) convertInputEditor.layout();
+                if (convertOutputEditor) convertOutputEditor.layout();
+            }
+            requestAnimationFrame(forceAllLayouts);
+            setTimeout(forceAllLayouts, 100);
+            setTimeout(forceAllLayouts, 500);
+        }, function (err) {
+            // Monaco failed to load — fall back to textareas
+            console.error("Monaco require() failed:", err);
+            monacoLoaded = false;
+            initFallbackTextareas();
+        });
+
+        /* ═══════════════════════════════════════
+           CODE REVIEW
+        ═══════════════════════════════════════ */
+        const reviewBtn = document.getElementById("reviewBtn");
+        const langSelect = document.getElementById("langSelect");
+        const severityBar = document.getElementById("severityBar");
+        const reviewPlaceholder = document.getElementById("reviewPlaceholder");
+        const reviewOutput = document.getElementById("reviewOutput");
+        const copyReview = document.getElementById("copyReview");
+
+        reviewBtn.addEventListener("click", runReview);
+
+        // Helper: get code from Monaco or fallback textarea
+        function getEditorValue(editor, fallbackId) {
+            if (editor) try { return editor.getValue(); } catch(e) {}
+            var ta = document.getElementById(fallbackId + "_ta");
+            return ta ? ta.value : "";
+        }
+        function setEditorValue(editor, fallbackId, val) {
+            if (editor) try { editor.setValue(val); return; } catch(e) {}
+            var ta = document.getElementById(fallbackId + "_ta");
+            if (ta) ta.value = val;
+            var pre = document.getElementById(fallbackId + "_pre");
+            if (pre) pre.textContent = val;
+        }
+
+        async function runReview() {
+            const code = getEditorValue(codeEditor, "codeEditorContainer").trim();
+            if (!code) { alert("Please paste some code first."); return; }
+
+            const areas = [...document.querySelectorAll(".focus-chip.selected")].map(c => c.dataset.value);
+            const extra = areas.length ? "Focus on: " + areas.join(", ") : null;
+
+            reviewBtn.disabled = true;
+            showLoading("Reviewing code with Gemini 2.5 Flash…");
+
+            try {
+                const res = await fetchWithTimeout(API + "/review", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code: code, language: langSelect.value, instructions: extra }),
+                }, 30000);
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    throw new Error(e.detail || "HTTP " + res.status);
+                }
+                const data = await res.json();
+                const md = data.result || "No output.";
+
+                reviewPlaceholder.classList.add("hidden");
+                reviewOutput.classList.remove("hidden");
+                reviewOutput.innerHTML = marked.parse(md);
+                reviewOutput.querySelectorAll("pre code").forEach(b => hljs.highlightElement(b));
+                countSeverities(md);
+                copyReview.classList.remove("hidden");
+
+                // Save to code history
+                saveCodeHistory({ type: 'review', language: langSelect.value, code: code, result: md });
+            } catch (err) {
+                reviewOutput.classList.remove("hidden");
+                reviewPlaceholder.classList.add("hidden");
+                reviewOutput.innerHTML = '<p style="color:var(--error);"><i class="fa-solid fa-circle-xmark" style="margin-right:6px;"></i>' + err.message + '</p>';
+            } finally {
+                reviewBtn.disabled = false;
+                hideLoading();
+            }
+        }
+
+        function countSeverities(md) {
+            let c = 0, h = 0, m = 0, l = 0;
+
+            // Strategy 1 — pipe-separated format: Critical: 0 | High: 8 | ...
+            const pipeMatch = md.match(/Critical:\s*(\d+)\s*\|\s*High:\s*(\d+)\s*\|\s*Medium:\s*(\d+)\s*\|\s*Low:\s*(\d+)/i);
+            if (pipeMatch) {
+                c = parseInt(pipeMatch[1], 10); h = parseInt(pipeMatch[2], 10);
+                m = parseInt(pipeMatch[3], 10); l = parseInt(pipeMatch[4], 10);
+            } else {
+                // Strategy 2 — line-by-line format: 🔴 Critical : 0 / Critical: 0
+                const critMatch = md.match(/Critical\s*:\s*(\d+)/i);
+                const highMatch = md.match(/High\s*:\s*(\d+)/i);
+                const medMatch  = md.match(/Medium\s*:\s*(\d+)/i);
+                const lowMatch  = md.match(/Low\s*:\s*(\d+)/i);
+                if (critMatch || highMatch || medMatch || lowMatch) {
+                    c = critMatch ? parseInt(critMatch[1], 10) : 0;
+                    h = highMatch ? parseInt(highMatch[1], 10) : 0;
+                    m = medMatch  ? parseInt(medMatch[1], 10)  : 0;
+                    l = lowMatch  ? parseInt(lowMatch[1], 10)  : 0;
+                } else {
+                    // Strategy 3 — count headings with severity keywords
+                    c = (md.match(/###?\s*.*Critical/gi) || []).length;
+                    h = (md.match(/###?\s*.*High/gi) || []).length;
+                    m = (md.match(/###?\s*.*Medium/gi) || []).length;
+                    l = (md.match(/###?\s*.*Low/gi) || []).length;
+                }
+            }
+            document.querySelector("#countCritical b").textContent = c;
+            document.querySelector("#countHigh b").textContent = h;
+            document.querySelector("#countMedium b").textContent = m;
+            document.querySelector("#countLow b").textContent = l;
+            severityBar.classList.remove("hidden");
+        }
+
+        copyReview.addEventListener("click", () => copyText(reviewOutput.innerText, copyReview));
+
+        /* ═══════════════════════════════════════
+           REWRITE FROM REVIEW TAB
+        ═══════════════════════════════════════ */
+        document.getElementById("rewriteFromReviewBtn").addEventListener("click", () => {
+            const code = getEditorValue(codeEditor, "codeEditorContainer").trim();
+            if (!code) { alert("Please paste some code first."); return; }
+            setEditorValue(rewriteInputEditor, "rewriteInputContainer", code);
+            document.getElementById("rewriteLangSelect").value = langSelect.value;
+            if (typeof monaco !== "undefined" && rewriteInputEditor) {
+                monaco.editor.setModelLanguage(rewriteInputEditor.getModel(), getMonacoLang(langSelect.value));
+                monaco.editor.setModelLanguage(rewriteOutputEditor.getModel(), getMonacoLang(langSelect.value));
+            }
+            document.querySelector('[data-tab="rewrite"]').click();
+            setTimeout(runRewrite, 150);
+        });
+
+        /* ═══════════════════════════════════════
+           REWRITE TAB
+        ═══════════════════════════════════════ */
+        const rewriteBtn = document.getElementById("rewriteBtn");
+        const rewriteLangSelect = document.getElementById("rewriteLangSelect");
+        const rewritePlaceholder = document.getElementById("rewritePlaceholder");
+        const rewriteOutputContainer = document.getElementById("rewriteOutputContainer");
+        const copyRewritten = document.getElementById("copyRewritten");
+        const improvementsSection = document.getElementById("improvementsSection");
+        const improvementsList = document.getElementById("improvementsList");
+
+        rewriteBtn.addEventListener("click", runRewrite);
+
+        async function runRewrite() {
+            const code = getEditorValue(rewriteInputEditor, "rewriteInputContainer").trim();
+            if (!code) { alert("Please paste some code first."); return; }
+
+            rewriteBtn.disabled = true;
+            showLoading("Rewriting code to production quality…");
+
+            try {
+                const res = await fetchWithTimeout(API + "/api/rewrite", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code: code, language: rewriteLangSelect.value }),
+                }, 30000);
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    throw new Error(e.detail || "HTTP " + res.status);
+                }
+                const data = await res.json();
+
+                rewritePlaceholder.classList.add("hidden");
+                rewriteOutputContainer.classList.remove("hidden");
+                setEditorValue(rewriteOutputEditor, "rewriteOutputContainer", data.rewritten_code || "");
+                if (typeof monaco !== "undefined" && rewriteOutputEditor) {
+                    monaco.editor.setModelLanguage(rewriteOutputEditor.getModel(), getMonacoLang(rewriteLangSelect.value));
+                }
+
+                if (data.improvements && data.improvements.length > 0) {
+                    improvementsSection.classList.remove("hidden");
+                    improvementsList.innerHTML = data.improvements.map(imp => {
+                        const safe = imp.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        return '<div class="improvement-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:3px; font-size:11px; flex-shrink:0;"></i> ' + safe + '</div>';
+                    }).join("");
+                }
+
+                copyRewritten.classList.remove("hidden");
+
+                // Save to code history
+                saveCodeHistory({ type: 'rewrite', language: rewriteLangSelect.value, code: code, result: data.rewritten_code, improvements: data.improvements });
+            } catch (err) {
+                rewritePlaceholder.classList.add("hidden");
+                rewriteOutputContainer.classList.remove("hidden");
+                setEditorValue(rewriteOutputEditor, "rewriteOutputContainer", "Error: " + err.message);
+            } finally {
+                rewriteBtn.disabled = false;
+                hideLoading();
+            }
+        }
+
+        copyRewritten.addEventListener("click", () => {
+            const val = getEditorValue(rewriteOutputEditor, "rewriteOutputContainer");
+            copyText(val, copyRewritten);
+        });
+
+        /* ═══════════════════════════════════════
+           CODE CONVERSION
+        ═══════════════════════════════════════ */
+        const convertBtn = document.getElementById("convertBtn");
+        const convertFromLang = document.getElementById("convertFromLang");
+        const convertToLang = document.getElementById("convertToLang");
+        const swapLangsBtn = document.getElementById("swapLangsBtn");
+        const convertPlaceholder = document.getElementById("convertPlaceholder");
+        const convertOutputContainer = document.getElementById("convertOutputContainer");
+        const convertNotesSection = document.getElementById("convertNotesSection");
+        const convertNotesList = document.getElementById("convertNotesList");
+        const copyConverted = document.getElementById("copyConverted");
+
+        convertBtn.addEventListener("click", runConvert);
+
+        swapLangsBtn.addEventListener("click", () => {
+            const fromVal = convertFromLang.value;
+            const toVal = convertToLang.value;
+            convertFromLang.value = toVal;
+            convertToLang.value = fromVal;
+            if (typeof monaco !== "undefined") {
+                if (convertInputEditor) monaco.editor.setModelLanguage(convertInputEditor.getModel(), getMonacoLang(toVal));
+                if (convertOutputEditor) monaco.editor.setModelLanguage(convertOutputEditor.getModel(), getMonacoLang(fromVal));
+            }
+        });
+
+        copyConverted.addEventListener("click", () => {
+            const val = getEditorValue(convertOutputEditor, "convertOutputContainer");
+            copyText(val, copyConverted);
+        });
+
+        async function runConvert() {
+            const code = getEditorValue(convertInputEditor, "convertInputContainer").trim();
+            if (!code) { alert("Please paste some code first."); return; }
+
+            const fromLang = convertFromLang.value;
+            const toLang = convertToLang.value;
+            if (fromLang === toLang) { alert("Source and target languages are the same."); return; }
+
+            convertBtn.disabled = true;
+            showLoading("Converting " + fromLang + " to " + toLang + "…");
+
+            try {
+                const res = await fetchWithTimeout(API + "/api/convert", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code: code, from_language: fromLang, to_language: toLang }),
+                }, 60000);
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    throw new Error(e.detail || "HTTP " + res.status);
+                }
+                const data = await res.json();
+
+                convertPlaceholder.classList.add("hidden");
+                convertOutputContainer.classList.remove("hidden");
+                setEditorValue(convertOutputEditor, "convertOutputContainer", data.converted_code || "");
+                if (typeof monaco !== "undefined" && convertOutputEditor) {
+                    monaco.editor.setModelLanguage(convertOutputEditor.getModel(), getMonacoLang(toLang));
+                }
+
+                if (data.notes && data.notes.length > 0) {
+                    convertNotesSection.classList.remove("hidden");
+                    convertNotesList.innerHTML = data.notes.map(note => {
+                        const safe = note.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                        return '<div class="improvement-item"><i class="fa-solid fa-circle-info" style="color:var(--warning); margin-top:3px; font-size:11px; flex-shrink:0;"></i> ' + safe + '</div>';
+                    }).join("");
+                } else {
+                    convertNotesSection.classList.add("hidden");
+                }
+
+                copyConverted.classList.remove("hidden");
+
+                // Save to code history
+                saveCodeHistory({
+                    type: 'convert',
+                    language: fromLang,
+                    to_language: toLang,
+                    code: code,
+                    result: data.converted_code,
+                    notes: data.notes
+                });
+            } catch (err) {
+                convertPlaceholder.classList.add("hidden");
+                convertOutputContainer.classList.remove("hidden");
+                setEditorValue(convertOutputEditor, "convertOutputContainer", "Error: " + err.message);
+            } finally {
+                convertBtn.disabled = false;
+                hideLoading();
+            }
+        }
+
+        /* ═══════════════════════════════════════
+           CHAT
+        ═══════════════════════════════════════ */
+        const chatMessages = document.getElementById("chatMessages");
+        const chatInput = document.getElementById("chatInput");
+        const chatSendBtn = document.getElementById("chatSendBtn");
+        const clearChatBtn = document.getElementById("clearChatBtn");
+        let chatHistory = [];
+
+        // Auto-resize textarea
+        chatInput.addEventListener("input", () => {
+            chatInput.style.height = "auto";
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + "px";
+        });
+
+        // Send on Enter, newline on Shift+Enter
+        chatInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+
+        chatSendBtn.addEventListener("click", sendChatMessage);
+
+        // Suggestion chips
+        document.querySelectorAll(".chat-suggestion-chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+                chatInput.value = chip.dataset.question;
+                chatInput.dispatchEvent(new Event("input"));
+                sendChatMessage();
+            });
+        });
+
+        // Clear chat
+        clearChatBtn.addEventListener("click", () => {
+            currentChatId = null;
+            chatHistory = [];
+            resetChatUI();
+            renderChatHistory();
+        });
+
+        function appendChatBubble(role, content) {
+            // Remove welcome message if present
+            const welcome = chatMessages.querySelector(".chat-welcome");
+            if (welcome) welcome.remove();
+
+            const bubble = document.createElement("div");
+            bubble.className = "chat-bubble " + role;
+
+            const avatar = document.createElement("div");
+            avatar.className = "chat-avatar " + role;
+            avatar.innerHTML = role === "ai"
+                ? '<i class="fa-solid fa-robot"></i>'
+                : '<i class="fa-solid fa-user"></i>';
+
+            const body = document.createElement("div");
+            body.className = "chat-bubble-content";
+
+            if (role === "ai") {
+                body.innerHTML = '<div class="md-output">' + marked.parse(content) + '</div>';
+                body.querySelectorAll("pre code").forEach(b => hljs.highlightElement(b));
+            } else {
+                body.textContent = content;
+            }
+
+            bubble.appendChild(avatar);
+            bubble.appendChild(body);
+            chatMessages.appendChild(bubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return bubble;
+        }
+
+        function showTypingIndicator() {
+            const welcome = chatMessages.querySelector(".chat-welcome");
+            if (welcome) welcome.remove();
+
+            const bubble = document.createElement("div");
+            bubble.className = "chat-bubble ai";
+            bubble.id = "chatTyping";
+
+            const avatar = document.createElement("div");
+            avatar.className = "chat-avatar ai";
+            avatar.innerHTML = '<i class="fa-solid fa-robot"></i>';
+
+            const body = document.createElement("div");
+            body.className = "chat-bubble-content";
+            body.innerHTML = '<div class="chat-typing"><span></span><span></span><span></span></div>';
+
+            bubble.appendChild(avatar);
+            bubble.appendChild(body);
+            chatMessages.appendChild(bubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typing = document.getElementById("chatTyping");
+            if (typing) typing.remove();
+        }
+
+        async function sendChatMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            // Get code context from the review editor
+            const code = getEditorValue(codeEditor, "codeEditorContainer").trim();
+            const language = langSelect ? langSelect.value : "python";
+
+            // Show user message
+            appendChatBubble("user", message);
+            chatInput.value = "";
+            chatInput.style.height = "auto";
+            chatSendBtn.disabled = true;
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                const res = await fetchWithTimeout(API + "/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: message,
+                        code: code,
+                        language: language,
+                        history: chatHistory.slice(-10),
+                    }),
+                }, 30000);
+
+                if (!res.ok) {
+                    const e = await res.json().catch(() => ({}));
+                    throw new Error(e.detail || "HTTP " + res.status);
+                }
+
+                const data = await res.json();
+                removeTypingIndicator();
+                appendChatBubble("ai", data.reply);
+
+                // Update history
+                chatHistory.push({ role: "user", content: message });
+                chatHistory.push({ role: "assistant", content: data.reply });
+
+                // Save chat session to localStorage
+                saveChatSession();
+
+            } catch (err) {
+                removeTypingIndicator();
+                appendChatBubble("ai", "**Error:** " + err.message);
+            } finally {
+                chatSendBtn.disabled = false;
+                chatInput.focus();
+            }
+        }
+
+        /* ═══════════════════════════════════════
+           CODE HISTORY (localStorage)
+        ═══════════════════════════════════════ */
+        const CODE_HISTORY_KEY = 'ai-code-review-code-history';
+        const codeHistoryBtn = document.getElementById('codeHistoryBtn');
+        const codeHistoryDropdown = document.getElementById('codeHistoryDropdown');
+        const codeHistoryListEl = document.getElementById('codeHistoryList');
+        const codeHistoryBadge = document.getElementById('codeHistoryBadge');
+        const clearCodeHistoryBtn = document.getElementById('clearCodeHistoryBtn');
+
+        function getCodeHistory() {
+            try { return JSON.parse(localStorage.getItem(CODE_HISTORY_KEY) || '[]'); } catch { return []; }
+        }
+        function setCodeHistory(arr) {
+            localStorage.setItem(CODE_HISTORY_KEY, JSON.stringify(arr));
+            renderCodeHistory();
+        }
+
+        function saveCodeHistory(entry) {
+            const history = getCodeHistory();
+            entry.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+            entry.timestamp = Date.now();
+            entry.preview = entry.code.substring(0, 60).replace(/\n/g, ' ');
+            history.unshift(entry);
+            if (history.length > 50) history.length = 50; // cap at 50
+            setCodeHistory(history);
+        }
+
+        function deleteCodeHistory(id) {
+            setCodeHistory(getCodeHistory().filter(e => e.id !== id));
+        }
+
+        function formatTimeAgo(ts) {
+            const diff = Date.now() - ts;
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return mins + 'm ago';
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return hrs + 'h ago';
+            const days = Math.floor(hrs / 24);
+            if (days < 7) return days + 'd ago';
+            return new Date(ts).toLocaleDateString();
+        }
+
+        function renderCodeHistory() {
+            const history = getCodeHistory();
+            const count = history.length;
+            if (count > 0) {
+                codeHistoryBadge.textContent = count > 9 ? '9+' : count;
+                codeHistoryBadge.classList.add('visible');
+            } else {
+                codeHistoryBadge.classList.remove('visible');
+            }
+            if (count === 0) {
+                codeHistoryListEl.innerHTML = '<div class="code-history-empty"><i class="fa-solid fa-folder-open"></i><p>No code history yet.<br>Review, rewrite, or convert code to see it here.</p></div>';
+                return;
+            }
+            codeHistoryListEl.innerHTML = history.map(e => {
+                const icon = e.type === 'review' ? 'fa-magnifying-glass' : e.type === 'convert' ? 'fa-right-left' : 'fa-wand-magic-sparkles';
+                const langLabel = (e.language || 'python').charAt(0).toUpperCase() + (e.language || 'python').slice(1);
+                const subLabel = e.type === 'convert' && e.to_language ? ' → ' + e.to_language.charAt(0).toUpperCase() + e.to_language.slice(1) : '';
+                return `<div class="code-history-item" data-id="${e.id}">
+                    <div class="code-hist-icon ${e.type}"><i class="fa-solid ${icon}"></i></div>
+                    <div class="code-hist-info">
+                        <div class="code-hist-title">${e.preview || 'Code snippet'}</div>
+                        <div class="code-hist-meta">
+                            <span class="code-hist-type ${e.type}">${e.type}</span>
+                            <span>${langLabel}${subLabel}</span>
+                            <span>${formatTimeAgo(e.timestamp)}</span>
+                        </div>
+                    </div>
+                    <button class="code-hist-delete" data-id="${e.id}" title="Delete"><i class="fa-solid fa-xmark"></i></button>
+                </div>`;
+            }).join('');
+
+            // Click to load
+            codeHistoryListEl.querySelectorAll('.code-history-item').forEach(item => {
+                item.addEventListener('click', (ev) => {
+                    if (ev.target.closest('.code-hist-delete')) return;
+                    const entry = history.find(e => e.id === item.dataset.id);
+                    if (!entry) return;
+                    loadCodeHistoryEntry(entry);
+                    codeHistoryDropdown.classList.remove('open');
+                });
+            });
+            // Delete buttons
+            codeHistoryListEl.querySelectorAll('.code-hist-delete').forEach(btn => {
+                btn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    deleteCodeHistory(btn.dataset.id);
+                });
+            });
+        }
+
+        function loadCodeHistoryEntry(entry) {
+            if (entry.type === 'review') {
+                document.querySelector('[data-tab="review"]').click();
+                setTimeout(() => {
+                    setEditorValue(codeEditor, 'codeEditorContainer', entry.code || '');
+                    langSelect.value = entry.language || 'python';
+                    if (typeof monaco !== 'undefined' && codeEditor) {
+                        monaco.editor.setModelLanguage(codeEditor.getModel(), getMonacoLang(entry.language || 'python'));
+                    }
+                    if (entry.result) {
+                        reviewPlaceholder.classList.add('hidden');
+                        reviewOutput.classList.remove('hidden');
+                        reviewOutput.innerHTML = marked.parse(entry.result);
+                        reviewOutput.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b));
+                        countSeverities(entry.result);
+                        copyReview.classList.remove('hidden');
+                    }
+                }, 100);
+            } else if (entry.type === 'convert') {
+                document.querySelector('[data-tab="convert"]').click();
+                setTimeout(() => {
+                    setEditorValue(convertInputEditor, 'convertInputContainer', entry.code || '');
+                    convertFromLang.value = entry.language || 'python';
+                    convertToLang.value = entry.to_language || 'javascript';
+                    if (typeof monaco !== 'undefined') {
+                        if (convertInputEditor) monaco.editor.setModelLanguage(convertInputEditor.getModel(), getMonacoLang(entry.language || 'python'));
+                        if (convertOutputEditor) monaco.editor.setModelLanguage(convertOutputEditor.getModel(), getMonacoLang(entry.to_language || 'javascript'));
+                    }
+                    if (entry.result) {
+                        convertPlaceholder.classList.add('hidden');
+                        convertOutputContainer.classList.remove('hidden');
+                        setEditorValue(convertOutputEditor, 'convertOutputContainer', entry.result);
+                        copyConverted.classList.remove('hidden');
+                        if (entry.notes && entry.notes.length > 0) {
+                            convertNotesSection.classList.remove('hidden');
+                            convertNotesList.innerHTML = entry.notes.map(note => {
+                                const safe = note.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                return '<div class="improvement-item"><i class="fa-solid fa-circle-info" style="color:var(--warning); margin-top:3px; font-size:11px; flex-shrink:0;"></i> ' + safe + '</div>';
+                            }).join('');
+                        }
+                    }
+                }, 100);
+            } else {
+                document.querySelector('[data-tab="rewrite"]').click();
+                setTimeout(() => {
+                    setEditorValue(rewriteInputEditor, 'rewriteInputContainer', entry.code || '');
+                    rewriteLangSelect.value = entry.language || 'python';
+                    if (typeof monaco !== 'undefined' && rewriteInputEditor) {
+                        monaco.editor.setModelLanguage(rewriteInputEditor.getModel(), getMonacoLang(entry.language || 'python'));
+                        monaco.editor.setModelLanguage(rewriteOutputEditor.getModel(), getMonacoLang(entry.language || 'python'));
+                    }
+                    if (entry.result) {
+                        rewritePlaceholder.classList.add('hidden');
+                        rewriteOutputContainer.classList.remove('hidden');
+                        setEditorValue(rewriteOutputEditor, 'rewriteOutputContainer', entry.result);
+                        copyRewritten.classList.remove('hidden');
+                        if (entry.improvements && entry.improvements.length > 0) {
+                            improvementsSection.classList.remove('hidden');
+                            improvementsList.innerHTML = entry.improvements.map(imp => {
+                                const safe = imp.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                return '<div class="improvement-item"><i class="fa-solid fa-check" style="color:var(--success); margin-top:3px; font-size:11px; flex-shrink:0;"></i> ' + safe + '</div>';
+                            }).join('');
+                        }
+                    }
+                }, 100);
+            }
+        }
+
+        // Toggle dropdown
+        codeHistoryBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            codeHistoryDropdown.classList.toggle('open');
+        });
+        document.addEventListener('click', (ev) => {
+            if (!codeHistoryDropdown.contains(ev.target) && ev.target !== codeHistoryBtn) {
+                codeHistoryDropdown.classList.remove('open');
+            }
+        });
+        clearCodeHistoryBtn.addEventListener('click', () => {
+            if (confirm('Clear all code history?')) setCodeHistory([]);
+        });
+
+        // Initial render
+        renderCodeHistory();
+
+        /* ═══════════════════════════════════════
+           CHAT HISTORY (localStorage)
+        ═══════════════════════════════════════ */
+        const CHAT_HISTORY_KEY = 'ai-code-review-chat-history';
+        const chatHistoryListEl = document.getElementById('chatHistoryList');
+        const newChatBtn = document.getElementById('newChatBtn');
+        let currentChatId = null;
+
+        function getChatSessions() {
+            try { return JSON.parse(localStorage.getItem(CHAT_HISTORY_KEY) || '[]'); } catch { return []; }
+        }
+        function setChatSessions(arr) {
+            localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(arr));
+            renderChatHistory();
+        }
+
+        function saveChatSession() {
+            if (chatHistory.length === 0) return;
+            const sessions = getChatSessions();
+            const title = chatHistory[0] ? chatHistory[0].content.substring(0, 50) : 'New Chat';
+            if (currentChatId) {
+                const idx = sessions.findIndex(s => s.id === currentChatId);
+                if (idx !== -1) {
+                    sessions[idx].messages = [...chatHistory];
+                    sessions[idx].title = title;
+                    sessions[idx].updatedAt = Date.now();
+                    setChatSessions(sessions);
+                    return;
+                }
+            }
+            const session = {
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                title: title,
+                messages: [...chatHistory],
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+            };
+            currentChatId = session.id;
+            sessions.unshift(session);
+            if (sessions.length > 30) sessions.length = 30;
+            setChatSessions(sessions);
+        }
+
+        function deleteChatSession(id) {
+            if (currentChatId === id) {
+                currentChatId = null;
+                chatHistory = [];
+                resetChatUI();
+            }
+            setChatSessions(getChatSessions().filter(s => s.id !== id));
+        }
+
+        function loadChatSession(id) {
+            const sessions = getChatSessions();
+            const session = sessions.find(s => s.id === id);
+            if (!session) return;
+
+            currentChatId = id;
+            chatHistory = [...session.messages];
+
+            // Rebuild the chat UI
+            chatMessages.innerHTML = '';
+            for (const msg of chatHistory) {
+                const role = msg.role === 'user' ? 'user' : 'ai';
+                appendChatBubble(role, msg.content);
+            }
+            renderChatHistory();
+        }
+
+        function resetChatUI() {
+            chatMessages.innerHTML = `
+                <div class="chat-welcome">
+                    <div style="width:56px; height:56px; border-radius:16px; background:linear-gradient(135deg, var(--accent), var(--accent-hover)); display:inline-flex; align-items:center; justify-content:center; font-size:22px; color:white; margin-bottom:14px; box-shadow:0 4px 16px var(--accent-glow);">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <h3 style="font-size:16px; font-weight:700; margin-bottom:6px;">Ask me anything about your code</h3>
+                    <p style="font-size:12.5px; color:var(--text-secondary); max-width:400px; margin:0 auto; line-height:1.5;">
+                        Paste code in the Review tab first, then ask questions here.
+                    </p>
+                    <div class="chat-suggestions">
+                        <button class="chat-suggestion-chip" data-question="Explain what this code does step by step">
+                            <i class="fa-solid fa-book-open"></i> Explain this code
+                        </button>
+                        <button class="chat-suggestion-chip" data-question="What are the potential bugs in this code?">
+                            <i class="fa-solid fa-bug"></i> Find bugs
+                        </button>
+                        <button class="chat-suggestion-chip" data-question="How can I optimize this code for better performance?">
+                            <i class="fa-solid fa-bolt"></i> Optimize
+                        </button>
+                        <button class="chat-suggestion-chip" data-question="What are the best practices I should follow for this code?">
+                            <i class="fa-solid fa-star"></i> Best practices
+                        </button>
+                    </div>
+                </div>`;
+            // Re-bind suggestion chips
+            chatMessages.querySelectorAll('.chat-suggestion-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    chatInput.value = chip.dataset.question;
+                    chatInput.dispatchEvent(new Event('input'));
+                    sendChatMessage();
+                });
+            });
+        }
+
+        function renderChatHistory() {
+            const sessions = getChatSessions();
+            if (sessions.length === 0) {
+                chatHistoryListEl.innerHTML = '<div class="chat-history-empty"><i class="fa-solid fa-comments"></i><p>No conversations yet.<br>Start a chat to see it here.</p></div>';
+                return;
+            }
+            chatHistoryListEl.innerHTML = sessions.map(s => {
+                const isActive = s.id === currentChatId;
+                const msgCount = s.messages ? Math.floor(s.messages.length / 2) : 0;
+                return `<div class="chat-history-item ${isActive ? 'active' : ''}" data-id="${s.id}">
+                    <div class="chat-hist-icon"><i class="fa-solid fa-message"></i></div>
+                    <div class="chat-hist-info">
+                        <div class="chat-hist-title">${s.title || 'New Chat'}</div>
+                        <div class="chat-hist-time">${msgCount} message${msgCount !== 1 ? 's' : ''} · ${formatTimeAgo(s.updatedAt || s.createdAt)}</div>
+                    </div>
+                    <button class="chat-hist-delete" data-id="${s.id}" title="Delete"><i class="fa-solid fa-xmark"></i></button>
+                </div>`;
+            }).join('');
+
+            chatHistoryListEl.querySelectorAll('.chat-history-item').forEach(item => {
+                item.addEventListener('click', (ev) => {
+                    if (ev.target.closest('.chat-hist-delete')) return;
+                    loadChatSession(item.dataset.id);
+                });
+            });
+            chatHistoryListEl.querySelectorAll('.chat-hist-delete').forEach(btn => {
+                btn.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    deleteChatSession(btn.dataset.id);
+                });
+            });
+        }
+
+        // New Chat button
+        newChatBtn.addEventListener('click', () => {
+            currentChatId = null;
+            chatHistory = [];
+            resetChatUI();
+            renderChatHistory();
+        });
+
+        // Initial render
+        renderChatHistory();
+
+        /* ═══════════════════════════════════════
+           HEALTH CHECK
+        ═══════════════════════════════════════ */
+        const badge = document.getElementById("apiBadge");
+        fetch(API + "/").then(r => r.json()).then(d => {
+            if (d.status === "API Connected") {
+                badge.innerHTML = '<span class="pulse-dot"></span> API Connected';
+                badge.className = "api-badge connected";
+            }
+        }).catch(() => {
+            badge.innerHTML = '<span class="pulse-dot"></span> API Offline';
+            badge.className = "api-badge disconnected";
+        });
+
+        /* ═══════════════════════════════════════
+           KEYBOARD SHORTCUTS
+        ═══════════════════════════════════════ */
+        document.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                e.preventDefault();
+                const activeTab = document.querySelector(".tab-btn.tab-active");
+                if (activeTab) {
+                    if (activeTab.dataset.tab === "review") reviewBtn.click();
+                    else if (activeTab.dataset.tab === "rewrite") rewriteBtn.click();
+                    else if (activeTab.dataset.tab === "convert") document.getElementById("convertBtn").click();
+                    else if (activeTab.dataset.tab === "chat") sendChatMessage();
+                }
+            }
+        });
+
+    })();
+    </script>
+</body>
+</html>
