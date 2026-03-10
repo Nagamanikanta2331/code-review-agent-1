@@ -57,7 +57,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://dancing-mermaid-f9e4c6.netlify.app",
+        "https://69aff3debac052b83330b6ec--dancing-mermaid-f9e4c6.netlify.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
